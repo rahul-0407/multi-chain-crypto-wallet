@@ -55,6 +55,9 @@ export default function App() {
         {/* Token Section */}
         <View style={styles.tokenSection}>
           <TouchableOpacity style={styles.networkSelector}>
+            <View style={styles.tokenIcon1}>
+                <MaterialCommunityIcons name="ethereum" size={12} color="#fff" />
+              </View>
             <Text style={styles.networkText}>Ethereum</Text>
             <Ionicons name="chevron-down" size={16} color="#000" />
           </TouchableOpacity>
@@ -110,18 +113,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 10,
+    borderBottomWidth: 1,
+    borderColor: "#ddd",
+    padding: 16,
+    paddingBottom: 18
     // borderBottom: "2px"
   },
   accountSection: {
     flexDirection: "row",
     alignItems: "center",
+    // paddingHorizontal:16
   },
   accountText: {
     fontSize: 18,
@@ -134,6 +142,8 @@ const styles = StyleSheet.create({
   },
   balanceContainer: {
     marginTop: 24,
+    paddingHorizontal:16,
+    // backgroundColor:"brown"
   },
   balanceValue: {
     fontSize: 42,
@@ -147,14 +157,16 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 26,
+    marginTop: 22,
+    paddingHorizontal:16,
+    // backgroundColor:"blue"
   },
   actionButton: {
     alignItems: "center",
     backgroundColor: "#f5f5f5",
-    borderRadius: 16,
+    borderRadius: 13,
     paddingVertical: 14,
-    width: 75,
+    width: "23%",
   },
   actionLabel: {
     fontSize: 13,
@@ -162,11 +174,12 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderColor: "#ddd",
-    marginTop: 28,
+    justifyContent: "flex-start",
+    gap:20,
+    marginTop: 20,
     paddingBottom: 8,
+    paddingHorizontal:16,
+    // backgroundColor:"red"
   },
   tabText: {
     fontSize: 15,
@@ -180,7 +193,9 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   tokenSection: {
-    marginTop: 20,
+    marginTop: 15,
+    paddingHorizontal:16,
+    // backgroundColor:"green"
   },
   networkSelector: {
     flexDirection: "row",
@@ -215,9 +230,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 12,
   },
+  tokenIcon1: {
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    backgroundColor: "#627EEA",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
   tokenName: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   tokenSub: {
     fontSize: 13,
@@ -242,9 +266,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   fundText: {
-    color: "#555",
+    color: "#000",
     fontSize: 14,
     marginBottom: 10,
+    fontWeight:800
   },
   addButton: {
     backgroundColor: "#000",
