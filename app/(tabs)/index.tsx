@@ -1,98 +1,261 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// App.js
+import React from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
-
-export default function HomeScreen() {
+export default function App() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.accountSection}>
+            <Text style={styles.accountText}>Account 2</Text>
+            <Ionicons name="chevron-down" size={18} color="#000" />
+          </View>
+
+          <View style={styles.iconsRight}>
+            <Ionicons name="copy-outline" size={22} color="#444" />
+            <Ionicons name="qr-code-outline" size={22} color="#444" />
+            <Ionicons name="notifications-outline" size={22} color="#444" />
+            <Ionicons name="menu-outline" size={24} color="#444" />
+          </View>
+        </View>
+
+        {/* Balance Section */}
+        <View style={styles.balanceContainer}>
+          <Text style={styles.balanceValue}>$0.00</Text>
+          <Text style={styles.balanceChange}>+$0 (+0.00%)</Text>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionRow}>
+          <ActionButton icon="cash-outline" label="Buy" />
+          <ActionButton icon="swap-vertical-outline" label="Swap" />
+          <ActionButton icon="send-outline" label="Send" />
+          <ActionButton icon="arrow-down-outline" label="Receive" />
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabRow}>
+          <Text style={[styles.tabText, styles.activeTab]}>Tokens</Text>
+          <Text style={styles.tabText}>Perps</Text>
+          <Text style={styles.tabText}>DeFi</Text>
+          <Text style={styles.tabText}>NFTs</Text>
+        </View>
+
+        {/* Token Section */}
+        <View style={styles.tokenSection}>
+          <TouchableOpacity style={styles.networkSelector}>
+            <Text style={styles.networkText}>Ethereum</Text>
+            <Ionicons name="chevron-down" size={16} color="#000" />
+          </TouchableOpacity>
+
+          <View style={styles.tokenCard}>
+            <View style={styles.tokenLeft}>
+              <View style={styles.tokenIcon}>
+                <MaterialCommunityIcons name="ethereum" size={26} color="#fff" />
+              </View>
+              <View>
+                <Text style={styles.tokenName}>Ethereum</Text>
+                <Text style={styles.tokenSub}>
+                  0 ETH • <Text style={styles.tokenEarn}>Earn 3.2%</Text>
+                </Text>
+              </View>
+            </View>
+            <View style={styles.tokenRight}>
+              <Text style={styles.tokenValue}>$0.00</Text>
+              <Text style={styles.tokenChange}>-5.90%</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Fund Section */}
+        <View style={styles.fundBox}>
+          <Text style={styles.fundText}>
+            Fund your wallet to get started in web3
+          </Text>
+          <TouchableOpacity style={styles.addButton}>
+            <Text style={styles.addButtonText}>Add funds</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
+
+type ActionButtonProps = {
+  icon: keyof typeof Ionicons.glyphMap; // ✅ Dynamically infers all valid icon names
+  label: string;
+};
+
+const ActionButton = ({ icon, label }: ActionButtonProps) => (
+  <TouchableOpacity style={styles.actionButton}>
+    <Ionicons name={icon} size={22} color="#000" />
+    <Text style={styles.actionLabel}>{label}</Text>
+  </TouchableOpacity>
+);
+
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+    // borderBottom: "2px"
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  accountSection: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  accountText: {
+    fontSize: 18,
+    fontWeight: "500",
+  },
+  iconsRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  balanceContainer: {
+    marginTop: 24,
+  },
+  balanceValue: {
+    fontSize: 42,
+    fontWeight: "bold",
+  },
+  balanceChange: {
+    color: "#777",
+    fontSize: 14,
+    marginTop: 4,
+  },
+  actionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 26,
+  },
+  actionButton: {
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 16,
+    paddingVertical: 14,
+    width: 75,
+  },
+  actionLabel: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  tabRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderColor: "#ddd",
+    marginTop: 28,
+    paddingBottom: 8,
+  },
+  tabText: {
+    fontSize: 15,
+    color: "#777",
+  },
+  activeTab: {
+    color: "#000",
+    fontWeight: "600",
+    borderBottomWidth: 2,
+    borderColor: "#000",
+    paddingBottom: 6,
+  },
+  tokenSection: {
+    marginTop: 20,
+  },
+  networkSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignSelf: "flex-start",
+  },
+  networkText: {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  tokenCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 20,
+  },
+  tokenLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  tokenIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#627EEA",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  tokenName: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  tokenSub: {
+    fontSize: 13,
+    color: "#666",
+  },
+  tokenEarn: {
+    color: "#2563eb",
+  },
+  tokenRight: {
+    alignItems: "flex-end",
+  },
+  tokenValue: {
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  tokenChange: {
+    fontSize: 13,
+    color: "red",
+  },
+  fundBox: {
+    marginTop: 30,
+    alignItems: "center",
+  },
+  fundText: {
+    color: "#555",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  addButton: {
+    backgroundColor: "#000",
+    borderRadius: 14,
+    paddingVertical: 14,
+    width: "90%",
+    alignItems: "center",
+  },
+  addButtonText: {
+    color: "#fff",
+    fontWeight: "500",
+    fontSize: 16,
   },
 });

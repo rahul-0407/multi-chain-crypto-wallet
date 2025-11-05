@@ -1,35 +1,132 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import React from "react";
+import { View, TouchableOpacity, Text, StyleSheet, Platform } from "react-native";
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+    <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: "#000" }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: true,
+          tabBarActiveTintColor: "#000",
+          tabBarInactiveTintColor: "#808080",
+          tabBarStyle: styles.tabBar,
+          tabBarLabelStyle: styles.labelStyle,
         }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Home",
+            tabBarIcon: ({ focused, color }) => (
+              <Ionicons
+                name={focused ? "home" : "home-outline"}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="browser"
+          options={{
+            title: "Browser",
+            tabBarIcon: ({ focused, color }) => (
+              <Ionicons
+                name={focused ? "compass" : "compass-outline"}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        {/* Floating Trade Button */}
+        <Tabs.Screen
+          name="trade"
+          options={{
+            title: "Trade",
+            tabBarIcon: () => null, // hidden icon
+            tabBarButton: ({ onPress }) => (
+              <TouchableOpacity onPress={onPress} style={styles.fabContainer}>
+                <View style={styles.fabButton}>
+                  <Ionicons name="add" size={32} color="#fff" />
+                </View>
+                <Text style={styles.fabLabel}>Trade</Text>
+              </TouchableOpacity>
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="activity"
+          options={{
+            title: "Activity",
+            tabBarIcon: ({ focused, color }) => (
+              <Ionicons
+                name={focused ? "time" : "time-outline"}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="rewards"
+          options={{
+            title: "Rewards",
+            tabBarIcon: ({ focused, color }) => (
+              <Ionicons
+                name={focused ? "gift" : "gift-outline"}
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+      </Tabs>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    height: 71,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#e7e7e7",
+    paddingBottom: Platform.OS === "ios" ? 10 : 6,
+  },
+  labelStyle: {
+    fontSize: 11,
+    marginBottom: 3,
+  },
+  fabContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    top: -28,
+  },
+  fabButton: {
+    width: 65,
+    height: 65,
+    borderRadius: 33,
+    backgroundColor: "#3B5BFF",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  fabLabel: {
+    fontSize: 11,
+    marginTop: 4,
+    color: "#000",
+    fontWeight: "500",
+  },
+});
