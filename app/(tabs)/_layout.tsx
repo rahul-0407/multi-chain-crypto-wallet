@@ -41,44 +41,17 @@ export default function TabsLayout() {
           }}
         />
 
-        {/* Floating Trade Button */}
+       
+
+        
+
         <Tabs.Screen
           name="receive"
-          options={{
-            title: "Trade",
-            tabBarIcon: () => null,
-            tabBarButton: ({ onPress }) => (
-              <TouchableOpacity onPress={onPress} style={styles.fabContainer}>
-                <View style={styles.fabButton}>
-                  <Ionicons name="add" size={32} color="#fff" />
-                </View>
-                <Text style={styles.fabLabel}>Trade</Text>
-              </TouchableOpacity>
-            ),
-          }}
-        />
-
-        <Tabs.Screen
-          name="activity"
-          options={{
-            title: "Activity",
-            tabBarIcon: ({ focused, color }) => (
-              <Ionicons
-                name="time-outline"
-                size={24}
-                color={color}
-              />
-            ),
-          }}
-        />
-
-        <Tabs.Screen
-          name="rewards"
           options={{
             title: "Rewards",
             tabBarIcon: ({ focused, color }) => (
               <Ionicons
-                name="settings-outline"
+                name="time-outline"
                 size={24}
                 color={color}
               />
