@@ -23,7 +23,7 @@ export default function TabsLayout() {
             title: "Home",
             tabBarIcon: ({ focused, color }) => (
               <Ionicons
-                name={focused ? "home" : "home-outline"}
+                name="wallet-outline"
                 size={24}
                 color={color}
               />
@@ -32,25 +32,21 @@ export default function TabsLayout() {
         />
 
         <Tabs.Screen
-          name="browser"
+          name="send"
           options={{
             title: "Browser",
             tabBarIcon: ({ focused, color }) => (
-              <Ionicons
-                name={focused ? "compass" : "compass-outline"}
-                size={24}
-                color={color}
-              />
+              <Ionicons name="swap-horizontal" size={26} color={color} />
             ),
           }}
         />
 
         {/* Floating Trade Button */}
         <Tabs.Screen
-          name="trade"
+          name="receive"
           options={{
             title: "Trade",
-            tabBarIcon: () => null, // hidden icon
+            tabBarIcon: () => null,
             tabBarButton: ({ onPress }) => (
               <TouchableOpacity onPress={onPress} style={styles.fabContainer}>
                 <View style={styles.fabButton}>
@@ -68,7 +64,7 @@ export default function TabsLayout() {
             title: "Activity",
             tabBarIcon: ({ focused, color }) => (
               <Ionicons
-                name={focused ? "time" : "time-outline"}
+                name="time-outline"
                 size={24}
                 color={color}
               />
@@ -82,7 +78,20 @@ export default function TabsLayout() {
             title: "Rewards",
             tabBarIcon: ({ focused, color }) => (
               <Ionicons
-                name={focused ? "gift" : "gift-outline"}
+                name="settings-outline"
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: "Rewards",
+            tabBarIcon: ({ focused, color }) => (
+              <Ionicons
+                name="settings-outline"
                 size={24}
                 color={color}
               />
@@ -101,6 +110,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#e7e7e7",
     paddingBottom: Platform.OS === "ios" ? 10 : 6,
+    paddingTop: 11,
   },
   labelStyle: {
     fontSize: 11,
