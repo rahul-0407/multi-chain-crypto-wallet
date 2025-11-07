@@ -1,3 +1,4 @@
+// app/(tabs)/(send)/_layout.tsx
 import { Stack } from "expo-router";
 
 export default function SendLayout() {
@@ -5,7 +6,7 @@ export default function SendLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: "slide_from_right",
+        presentation: "card",
       }}
     />
   );

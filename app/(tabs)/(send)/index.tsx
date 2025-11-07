@@ -23,7 +23,7 @@ export default function SendSelectScreen() {
       </View>
 
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={18} color="#888" />
+        <Ionicons name="search" size={18} color="#000" />
         <TextInput
           placeholder="Search tokens and NFTs"
           style={styles.searchInput}
@@ -59,17 +59,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 17,
   },
   title: { fontSize: 22, fontWeight: "700" },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
-    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#dcdcdc", // ✅ softer grey that’s actually visible
+    borderRadius: 8,        // ✅ consistent rounded corners
     paddingHorizontal: 10,
-    height: 42,
+    height: 49,
+    backgroundColor: "#fff", // optional: helps the border stand out
   },
+
   searchInput: { flex: 1, marginLeft: 8, fontSize: 15 },
   sectionTitle: {
     fontWeight: "600",
