@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
     marginBottom: 24,
-    marginTop:56,
+    marginTop:10,
     marginHorizontal: 20,
   },
   item: {
