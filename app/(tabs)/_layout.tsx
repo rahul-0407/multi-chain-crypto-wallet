@@ -71,6 +71,12 @@ export default function TabsLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="(send)"
+          options={{
+            href: null, // this tells expo-router NOT to show it in the bottom tab
+          }}
+        />
       </Tabs>
     </SafeAreaView>
   );

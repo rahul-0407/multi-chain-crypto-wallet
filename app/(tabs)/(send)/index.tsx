@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
@@ -35,7 +35,7 @@ export default function SendSelectScreen() {
 
       <TouchableOpacity
         style={styles.tokenRow}
-        onPress={() => router.push("/(tabs)/send/amount")}
+        onPress={() => router.push("/(tabs)/(send)/amount")}
       >
         <View style={styles.tokenIcon}>
           <Text style={styles.iconText}>S</Text>

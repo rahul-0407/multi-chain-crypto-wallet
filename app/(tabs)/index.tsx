@@ -89,7 +89,7 @@ export default function App() {
         <View style={styles.actionRow}>
           <ActionButton icon="cash-outline" label="Buy" />
           <ActionButton icon="swap-vertical-outline" label="Swap" />
-          <ActionButton onPress={() => router.push("/(tabs)/send")} icon="send-outline" label="Send" />
+          <ActionButton onPress={() => router.push("/(tabs)/(send)")} icon="send-outline" label="Send" />
           <ActionButton icon="arrow-down-outline" label="Receive" />
         </View>
 
@@ -323,7 +323,7 @@ type ActionButtonProps = {
   onPress?: () => void;
 };
 
-const ActionButton = ({ icon, label }: ActionButtonProps) => (
+const ActionButton = ({ icon, label, onPress }: ActionButtonProps) => (
   <TouchableOpacity style={styles.actionButton} onPress={onPress}>
     <Ionicons name={icon} size={22} color="#000" />
     <Text style={styles.actionLabel}>{label}</Text>
