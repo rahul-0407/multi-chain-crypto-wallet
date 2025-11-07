@@ -32,7 +32,7 @@ export default function TabsLayout() {
         />
 
         <Tabs.Screen
-          name="send"
+          name="swap"
           options={{
             title: "Browser",
             tabBarIcon: ({ focused, color }) => (
@@ -46,7 +46,7 @@ export default function TabsLayout() {
         
 
         <Tabs.Screen
-          name="receive"
+          name="rewards"
           options={{
             title: "Rewards",
             tabBarIcon: ({ focused, color }) => (
