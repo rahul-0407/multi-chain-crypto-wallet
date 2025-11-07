@@ -55,8 +55,23 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Header */}
-        <Text style={styles.headerTitle}>Settings</Text>
+        {/* Header with Close Button */}
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <TouchableOpacity
+  onPress={() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(tabs)");
+    }
+  }}
+  style={styles.closeButton}
+>
+  <Ionicons name="close" size={28} color="#000" />
+</TouchableOpacity>
+
+        </View>
 
         {/* Section Items */}
         <TouchableOpacity style={styles.item}>
@@ -99,7 +114,7 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color="#999" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.item}>
+        <TouchableOpacity style={styles.item} onPress={() => router.push('/(settings)/notifications')}>
           <View style={styles.textContainer}>
             <Text style={styles.itemTitle}>Notifications</Text>
             <Text style={styles.itemSubtitle}>
@@ -188,13 +203,21 @@ const styles = StyleSheet.create({
   scrollContainer: {
     paddingVertical: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    marginTop: 10,
+    marginHorizontal: 20,
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
     color: '#000',
-    marginBottom: 24,
-    marginTop:10,
-    marginHorizontal: 20,
+  },
+  closeButton: {
+    padding: 6,
   },
   item: {
     flexDirection: 'row',

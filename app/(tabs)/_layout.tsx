@@ -59,9 +59,9 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
-          name="settings"
+          name="setting"
           options={{
-            title: "Rewards",
+            title: "Settings",
             tabBarIcon: ({ focused, color }) => (
               <Ionicons
                 name="settings-outline"

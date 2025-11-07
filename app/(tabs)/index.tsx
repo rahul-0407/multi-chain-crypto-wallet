@@ -16,6 +16,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useWallet } from '../../hooks/useWallet';
 import { SUPPORTED_CHAINS } from '../../utils/constants';
 import { formatAddress, formatBalance, formatUSD } from '../../utils/formatters';
+import { router } from "expo-router";
 
 export default function App() {
   const { wallet, balances, loading, refreshBalances, selectedChain, setSelectedChain } = useWallet();
@@ -70,7 +71,7 @@ export default function App() {
               <Ionicons name="qr-code-outline" size={22} color="#444" />
             </TouchableOpacity>
             <TouchableOpacity>
-              <Ionicons name="notifications-outline" size={22} color="#444" />
+              <Ionicons onPress={() => router.push('../(settings)/notifications')} name="notifications-outline" size={22} color="#444" />
             </TouchableOpacity>
             <TouchableOpacity>
               <Ionicons name="menu-outline" size={24} color="#444" />

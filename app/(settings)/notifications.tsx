@@ -3,12 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from 'expo-router';
 
 interface NotificationItem {
@@ -19,7 +19,7 @@ interface NotificationItem {
   read: boolean;
 }
 
-export default function NotificationsScreen(): JSX.Element {
+export default function NotificationsScreen() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationItem[]>([
     {
@@ -112,6 +112,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
+    marginTop:11,
     paddingVertical: 12,
   },
   headerTitle: {
@@ -162,9 +163,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    paddingBottom: 16,
     backgroundColor: '#fff',
   },
   button: {
