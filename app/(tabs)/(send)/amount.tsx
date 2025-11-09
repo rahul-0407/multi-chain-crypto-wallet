@@ -39,6 +39,12 @@ export default function AmountScreen() {
     }
   };
 
+  const handlePercentage = (percentage: number) => {
+    const calculatedAmount = (available * percentage).toFixed(5);
+    setAmount(calculatedAmount);
+    setError(false);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -54,17 +60,15 @@ export default function AmountScreen() {
 
       {/* Amount Input */}
       <View style={styles.amountContainer}>
-        <TextInput
+        <Text
           style={[
             styles.amountInput,
             error ? styles.errorText : styles.normalText,
           ]}
-          placeholder={`0 ${currency}`}
-          placeholderTextColor="#ccc"
-          value={amount}
-          onChangeText={handleInput}
-          keyboardType="decimal-pad"
-        />
+        >
+          {amount || "0"}
+        </Text>
+        <Text style={styles.cursorLine}>|</Text>
         <Text
           style={[
             styles.currencyText,
@@ -76,43 +80,33 @@ export default function AmountScreen() {
       </View>
 
       {/* Balance Info */}
-      <Text style={styles.balanceText}>{available} {currency} available</Text>
+      <Text style={styles.balanceText}>
+        {available} {currency} available
+      </Text>
 
-      {/* Error or Continue Button */}
+      {/* Percentage Buttons */}
+      <View style={styles.percentageContainer}>
+        {[
+          { label: "25%", value: 0.25 },
+          { label: "50%", value: 0.5 },
+          { label: "75%", value: 0.75 },
+          { label: "Max", value: 1 },
+        ].map((item) => (
+          <TouchableOpacity
+            key={item.label}
+            style={styles.percentageButton}
+            onPress={() => handlePercentage(item.value)}
+          >
+            <Text style={styles.percentageText}>{item.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Keypad and Continue Button */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardContainer}
       >
-        {error ? (
-          <View style={[styles.actionButton, styles.errorButton]}>
-            <Text style={styles.errorButtonText}>Invalid value</Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              {
-                backgroundColor:
-                  amount && parseFloat(amount) > 0 ? "#3B5BFF" : "#e8e8e8",
-              },
-            ]}
-            disabled={!amount || parseFloat(amount) <= 0}
-            onPress={handleContinue}
-          >
-            <Text
-              style={[
-                styles.continueText,
-                {
-                  color:
-                    amount && parseFloat(amount) > 0 ? "#fff" : "#888",
-                },
-              ]}
-            >
-              Continue
-            </Text>
-          </TouchableOpacity>
-        )}
-
         {/* Keypad Grid */}
         <View style={styles.keypadContainer}>
           {[
@@ -148,6 +142,36 @@ export default function AmountScreen() {
             </View>
           ))}
         </View>
+
+        {/* Error or Continue Button */}
+        {error ? (
+          <View style={[styles.actionButton, styles.errorButton]}>
+            <Text style={styles.errorButtonText}>Invalid value</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              {
+                backgroundColor:
+                  amount && parseFloat(amount) > 0 ? "#3B5BFF" : "#e8e8e8",
+              },
+            ]}
+            disabled={!amount || parseFloat(amount) <= 0}
+            onPress={handleContinue}
+          >
+            <Text
+              style={[
+                styles.continueText,
+                {
+                  color: amount && parseFloat(amount) > 0 ? "#fff" : "#888",
+                },
+              ]}
+            >
+              Continue
+            </Text>
+          </TouchableOpacity>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -181,6 +205,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "right",
   },
+  cursorLine: {
+    fontSize: 52,
+    fontWeight: "300",
+    color: "#6B7AE5",
+    marginLeft: 2,
+    marginRight: 2,
+  },
   currencyText: {
     fontSize: 40,
     fontWeight: "700",
@@ -198,6 +229,26 @@ const styles = StyleSheet.create({
     color: "#8a8a8a",
     marginTop: 12,
   },
+  percentageContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  percentageButton: {
+    backgroundColor: "#EEF1FE",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    minWidth: 70,
+    alignItems: "center",
+  },
+  percentageText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#5B6B9E",
+  },
   keyboardContainer: {
     width: "100%",
     alignItems: "center",
@@ -208,7 +259,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
-    marginBottom: 12,
+    marginTop: 12,
   },
   continueText: {
     fontSize: 16,
@@ -224,6 +275,7 @@ const styles = StyleSheet.create({
   },
   keypadContainer: {
     width: "90%",
+    marginBottom: 12,
   },
   keypadRow: {
     flexDirection: "row",
@@ -232,7 +284,7 @@ const styles = StyleSheet.create({
   },
   key: {
     width: "30%",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#EEF1FE",
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",

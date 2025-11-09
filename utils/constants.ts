@@ -1,8 +1,8 @@
 export const SUPPORTED_CHAINS = [
   {
     id: 11155111,
-    name: 'Ethereum Sepolia',
-    symbol: 'ETH',
+    name: 'Sepolia ETH',
+    symbol: 'SETH',
     rpc: 'https://eth-sepolia.g.alchemy.com/v2/C6LvWCaOCHnDuTlpmwfD7JQFkdsXCMC-',
     explorer: 'https://sepolia.etherscan.io',
     color: '#627EEA'

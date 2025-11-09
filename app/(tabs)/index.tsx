@@ -11,11 +11,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Clipboard from 'expo-clipboard';
 import { useWallet } from '../../hooks/useWallet';
 import { SUPPORTED_CHAINS } from '../../utils/constants';
 import { formatAddress, formatBalance, formatUSD } from '../../utils/formatters';
+import { getUsdValue } from "../../utils/pricing";
 import { router } from "expo-router";
 
 export default function App() {
@@ -24,11 +26,11 @@ export default function App() {
   const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
 
-  useEffect(() => {
-    if (wallet) {
-      refreshBalances();
-    }
-  }, []);
+ useFocusEffect(
+  React.useCallback(() => {
+    refreshBalances();
+  }, [])
+);
 
   const copyAddress = async () => {
     if (wallet?.address) {
@@ -43,7 +45,7 @@ export default function App() {
     return sum + parseFloat(balance || '0');
   }, 0);
 
-  const totalUsdValue = totalBalance * 2000; // Mock price - you can add real price API later
+  const totalUsdValue = getUsdValue(totalBalance); // Mock price - you can add real price API later
 
   return (
     <SafeAreaView style={styles.container}>
