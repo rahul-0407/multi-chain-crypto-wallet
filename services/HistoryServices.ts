@@ -40,19 +40,25 @@ async function getJSON(url: string) {
 }
 
 /** NATIVE CHAIN TXS */
-export async function fetchNativeTxs(address: string, chainId: number) {
+export async function fetchNativeTxs(
+  address: string,
+  chainId: number,
+  page: number = 1,
+  offset: number = 25
+) {
   const conf = SCANNERS[chainId];
   if (!conf) return [];
 
   const url =
-    `${conf.apiBase}?apikey=${process.env.EXPO_PUBLIC_ETHERSCAN_KEY}` +
-    `&module=account&action=txlist` +
-    `&address=${address}` +
-    `&chainid=${chainId}`;
+    `${conf.apiBase}/accounts/${address}/transactions` +
+    `?page=${page}` +
+    `&offset=${offset}` +
+    `&filter=both_sends_and_receives` +
+    `&apikey=${process.env.EXPO_PUBLIC_ETHERSCAN_KEY}`;
 
   const data = await getJSON(url);
   console.log(data)
-  if (!data?.result) return [];
+  
 
   const list = Array.isArray(data.result) ? data.result : [];
 
@@ -61,8 +67,8 @@ export async function fetchNativeTxs(address: string, chainId: number) {
     from: t.from,
     to: t.to,
     time: Number(t.timeStamp),
-    valueEth: ethers.utils.formatEther(t.value),
-    status: t.isError === "1" ? "Failed" : "Confirmed"
+    valueEth: ethers.utils.formatEther(t.value ?? "0"),
+    status: t.success ? "Confirmed" : "Failed",
   }));
 }
 
@@ -70,46 +76,42 @@ export async function fetchNativeTxs(address: string, chainId: number) {
 
 
 
+
+
 /** ERC-20 TOKEN TRANSFERS */
-// export async function fetchTokenTxs(
-//   address: string,
-//   chainId: number,
-//   page = 1,
-//   offset = 25
-// ): Promise<TxToken[]> {
-//   try {
-//     const conf = SCANNERS[chainId];
-//     if (!conf) return [];
+export async function fetchTokenTxs(
+  address: string,
+  chainId: number,
+  page = 1,
+  offset = 25
+) {
+  const conf = SCANNERS[chainId];
+  if (!conf) return [];
 
-//     const url =
-//       `${conf.apiBase}?module=account&action=tokentx` +
-//       `&address=${address}&startblock=0&endblock=99999999` +
-//       `&page=${page}&offset=${offset}&sort=desc&apikey=${conf.apiKey}`;
+  const url =
+    `${conf.apiBase}/accounts/${address}/token-transfers` +
+    `?page=${page}&offset=${offset}&apikey=${process.env.EXPO_PUBLIC_ETHERSCAN_KEY}`;
 
-//     const data = await getJSON(url);
+  const data = await getJSON(url);
 
-//     // ALWAYS ensure result is an array
-//     const list = Array.isArray(data.result) ? data.result : [];
+  const list = Array.isArray(data.result) ? data.result : [];
 
-//     return list.map((t: any) => {
-//       const dec = Number(t.tokenDecimal || 18);
-//       return {
-//         hash: t.hash,
-//         contract: t.contractAddress,
-//         from: t.from,
-//         to: t.to,
-//         time: Number(t.timeStamp),
-//         value: ethers.utils.formatUnits(t.value ?? "0", dec),
-//         symbol: t.tokenSymbol,
-//         name: t.tokenName,
-//         status: "Confirmed",
-//       };
-//     });
-//   } catch (e) {
-//     console.log("fetchTokenTxs error:", e);
-//     return [];
-//   }
-// }
+  return list.map((t: any) => {
+    const dec = Number(t.tokenDecimal || 18);
+    return {
+      hash: t.hash,
+      contract: t.contractAddress,
+      from: t.from,
+      to: t.to,
+      time: Number(t.timeStamp),
+      value: ethers.utils.formatUnits(t.value ?? "0", dec),
+      symbol: t.tokenSymbol,
+      name: t.tokenName,
+      status: "Confirmed",
+    };
+  });
+}
+
 
 export function explorerTxUrl(hash: string, chainId: number) {
   const conf = SCANNERS[chainId];
