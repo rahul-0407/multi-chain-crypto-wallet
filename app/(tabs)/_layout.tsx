@@ -59,6 +59,19 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
+          name="activity"
+          options={{
+            title: "Activity",
+            tabBarIcon: ({ focused, color }) => (
+              <Ionicons
+                name="time-outline"
+                size={24}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="setting"
           options={{
             title: "Settings",

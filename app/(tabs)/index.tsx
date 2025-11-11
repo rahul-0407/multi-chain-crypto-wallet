@@ -21,7 +21,7 @@ import { getUsdValue } from "../../utils/pricing";
 import { router } from "expo-router";
 
 export default function App() {
-  const { wallet, balances, loading, refreshBalances, selectedChain, setSelectedChain } = useWallet();
+  const { wallet, balances, loading, refreshBalances, selectedChain, setSelectedChain, tokenList } = useWallet();
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
@@ -45,7 +45,12 @@ export default function App() {
     return sum + parseFloat(balance || '0');
   }, 0);
 
-  const totalUsdValue = getUsdValue(totalBalance); // Mock price - you can add real price API later
+  // TOTAL USD VALUE (MATCH SEND PAGE)
+const totalUsdValue = tokenList.reduce(
+  (sum, token) => sum + (token.usdValue || 0),
+  0
+);
+ // Mock price - you can add real price API later
 
   return (
     <SafeAreaView style={styles.container}>
