@@ -1,5 +1,11 @@
 // app/(activity)/index.tsx
-import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -9,6 +15,8 @@ import {
   FlatList,
   Linking,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useWallet } from "../../hooks/useWallet";
@@ -29,10 +37,9 @@ export default function ActivityScreen() {
   const [page, setPage] = useState(1);
   const [nativeTxs, setNativeTxs] = useState<any[]>([]);
   const [tokenTxs, setTokenTxs] = useState<any[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const onEndReachedCalledDuringMomentum = useRef(false);
-
-
   const address = wallet?.address || "";
 
   const reload = useCallback(async () => {
@@ -119,22 +126,14 @@ export default function ActivityScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Transactions</Text>
-        <View style={styles.chainPicker}>
+        <TouchableOpacity
+          style={styles.chainPicker}
+          onPress={() => setModalVisible(true)}
+        >
           <Ionicons name="ellipse" size={10} color={selectedChain.color} />
           <Text style={styles.chainText}>{selectedChain.name}</Text>
           <Ionicons name="chevron-down" size={16} color="#000" />
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            onPress={() => {
-              const idx = SUPPORTED_CHAINS.findIndex(
-                (c) => c.id === selectedChain.id
-              );
-              const next =
-                SUPPORTED_CHAINS[(idx + 1) % SUPPORTED_CHAINS.length];
-              setSelectedChain(next);
-            }}
-          />
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Tabs */}
@@ -153,29 +152,28 @@ export default function ActivityScreen() {
         <ActivityIndicator style={{ marginTop: 24 }} />
       ) : (
         <FlatList
-  data={data}
-  keyExtractor={(it: any, i) => it.hash || String(i)}
-  renderItem={renderRow}
-  onEndReachedThreshold={0.6}
-  onEndReached={() => {
-    if (!onEndReachedCalledDuringMomentum.current) {
-      loadMore();
-      onEndReachedCalledDuringMomentum.current = true;
-    }
-  }}
-  onMomentumScrollBegin={() => {
-    onEndReachedCalledDuringMomentum.current = false;
-  }}
-  ListEmptyComponent={
-    <View style={{ padding: 20 }}>
-      <Text style={{ color: "#666" }}>No activity yet.</Text>
-    </View>
-  }
-/>
-
+          data={data}
+          keyExtractor={(it: any, i) => it.hash || String(i)}
+          renderItem={renderRow}
+          onEndReachedThreshold={0.6}
+          onEndReached={() => {
+            if (!onEndReachedCalledDuringMomentum.current) {
+              loadMore();
+              onEndReachedCalledDuringMomentum.current = true;
+            }
+          }}
+          onMomentumScrollBegin={() => {
+            onEndReachedCalledDuringMomentum.current = false;
+          }}
+          ListEmptyComponent={
+            <View style={{ padding: 20 }}>
+              <Text style={{ color: "#666" }}>No activity yet.</Text>
+            </View>
+          }
+        />
       )}
 
-      {/* Account info section */}
+      {/* Account info */}
       <View style={styles.infoSection}>
         <Ionicons name="information-circle-outline" size={16} color="#666" />
         <View>
@@ -197,6 +195,50 @@ export default function ActivityScreen() {
           should not be treated as advice.
         </Text>
       </View>
+
+      {/* ✅ Network Selection Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setModalVisible(false)}
+        />
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Networks</Text>
+          <FlatList
+            data={SUPPORTED_CHAINS}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.chainItem,
+                  item.id === selectedChain.id && styles.chainItemActive,
+                ]}
+                onPress={() => {
+                  setSelectedChain(item);
+                  setModalVisible(false);
+                }}
+              >
+                <Ionicons name="ellipse" size={14} color={item.color} />
+                <Text style={styles.chainItemText}>{item.name}</Text>
+                {item.id === selectedChain.id && (
+                  <Ionicons
+                    name="checkmark"
+                    size={18}
+                    color="#4b6ef5"
+                    style={{ marginLeft: "auto" }}
+                  />
+                )}
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -207,8 +249,7 @@ const styles = StyleSheet.create({
     paddingTop: 21,
     paddingBottom: 12,
     flexDirection: "column",
-    justifyContent: "space-between",
-    alignItems:"flex-start",
+    alignItems: "flex-start",
     gap: 10,
   },
   headerTitle: { fontSize: 22, fontWeight: "700" },
@@ -223,7 +264,6 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   chainText: { fontWeight: "600" },
-
   tabs: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -238,7 +278,6 @@ const styles = StyleSheet.create({
     borderColor: "#4b6ef5",
     paddingBottom: 6,
   },
-
   row: {
     paddingHorizontal: 16,
     paddingVertical: 16,
@@ -261,7 +300,6 @@ const styles = StyleSheet.create({
   rowTitle: { fontWeight: "700" },
   rowSub: { color: "#16a34a", marginTop: 2 },
   rowAmount: { fontWeight: "600" },
-
   infoSection: {
     backgroundColor: "#f8f8f8",
     paddingVertical: 10,
@@ -272,10 +310,54 @@ const styles = StyleSheet.create({
   },
   infoTitle: { color: "#444", fontWeight: "600" },
   infoDate: { color: "#666", fontSize: 13 },
-
   explorer: { alignItems: "center", paddingVertical: 16 },
   explorerText: { color: "#2563eb", fontWeight: "600" },
-
   footnote: { paddingHorizontal: 16, paddingBottom: 20 },
   footTxt: { color: "#666", fontSize: 12, lineHeight: 18 },
+
+  // ✅ Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  modalContainer: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 30,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#ddd",
+    alignSelf: "center",
+    marginVertical: 8,
+  },
+  modalTitle: {
+    fontWeight: "700",
+    fontSize: 18,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  chainItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  chainItemActive: {
+    backgroundColor: "#f1f5ff",
+  },
+  chainItemText: {
+    fontSize: 16,
+    marginLeft: 10,
+    color: "#000",
+  },
 });
