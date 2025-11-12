@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useWallet } from "../../hooks/useWallet";
+import { useLocalSearchParams } from "expo-router";
 import { SUPPORTED_CHAINS } from "../../utils/constants";
 import {
   fetchNativeTxs,
@@ -27,21 +28,29 @@ import {
   explorerTxUrl,
   explorerAddressUrl,
 } from "../../services/HistoryServices";
+import ChainManager from "../../services/ChainManager";
 
 type TabKey = "Transactions" | "Transfers" | "Perps";
 
 export default function ActivityScreen() {
   const { wallet, selectedChain, setSelectedChain } = useWallet();
+  const params = useLocalSearchParams();
+  const txHashParam = Array.isArray(params.txHash)
+    ? params.txHash[0]
+    : (params.txHash as string | undefined);
+
   const [activeTab, setActiveTab] = useState<TabKey>("Transactions");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [nativeTxs, setNativeTxs] = useState<any[]>([]);
   const [tokenTxs, setTokenTxs] = useState<any[]>([]);
+  const [pendingTx, setPendingTx] = useState<any | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
   const onEndReachedCalledDuringMomentum = useRef(false);
   const address = wallet?.address || "";
 
+  /* 🌀 Fetch normal txs */
   const reload = useCallback(async () => {
     if (!address) return;
     setLoading(true);
@@ -62,12 +71,56 @@ export default function ActivityScreen() {
     reload();
   }, [address, selectedChain.id]);
 
-  const data = useMemo(() => {
-    if (activeTab === "Transactions") return nativeTxs;
-    if (activeTab === "Transfers") return tokenTxs;
-    return [];
-  }, [activeTab, nativeTxs, tokenTxs]);
+  /* 🧩 Handle pending tx from confirm page */
+  useEffect(() => {
+    if (!txHashParam) return;
+    const now = Date.now();
 
+    const tempTx = {
+      hash: txHashParam,
+      from: address,
+      to: "",
+      time: Math.floor(now / 1000),
+      valueEth: "0.001",
+      status: "Pending",
+    };
+    setPendingTx(tempTx);
+
+    // Start polling for confirmation
+    const provider = ChainManager.getProvider(selectedChain.id);
+    const interval = setInterval(async () => {
+      try {
+        const receipt = await provider.getTransactionReceipt(txHashParam);
+        if (receipt && receipt.confirmations > 0) {
+          clearInterval(interval);
+          setPendingTx((prev: any) =>
+            prev ? { ...prev, status: "Confirmed" } : prev
+          );
+          // refresh list from chain
+          reload();
+        }
+      } catch (e) {
+        console.log("poll error:", e);
+      }
+    }, 5000); // every 5s
+
+    return () => clearInterval(interval);
+  }, [txHashParam, selectedChain.id]);
+
+  /* 🧾 Merge txs */
+  const data = useMemo(() => {
+    const base =
+      activeTab === "Transactions"
+        ? nativeTxs
+        : activeTab === "Transfers"
+          ? tokenTxs
+          : [];
+    return pendingTx && activeTab === "Transactions"
+      ? [pendingTx, ...base]
+      : base;
+  }, [activeTab, nativeTxs, tokenTxs, pendingTx]);
+
+  /* 🚀 Infinite Scroll */
   const loadMore = async () => {
     if (loading || !address) return;
     setLoading(true);
@@ -89,12 +142,20 @@ export default function ActivityScreen() {
   const openExplorerForAddress = () =>
     Linking.openURL(explorerAddressUrl(address, selectedChain.id));
 
+  /* 🎨 Row */
   const renderRow = ({ item }: { item: any }) => {
     const isSend = item.from?.toLowerCase() === address.toLowerCase();
     const title = isSend
       ? `Sent ${selectedChain.symbol}`
       : `Received ${selectedChain.symbol}`;
-    const amount = `${item.valueEth} ${selectedChain.symbol}`;
+    const amount = `${item.valueEth ?? item.value ?? "0"} ${selectedChain.symbol}`;
+
+    const statusColor =
+      item.status === "Pending"
+        ? "#f59e0b"
+        : item.status === "Failed"
+          ? "#ef4444"
+          : "#16a34a";
 
     return (
       <TouchableOpacity
@@ -113,7 +174,9 @@ export default function ActivityScreen() {
           </View>
           <View>
             <Text style={styles.rowTitle}>{title}</Text>
-            <Text style={styles.rowSub}>{item.status}</Text>
+            <Text style={[styles.rowSub, { color: statusColor }]}>
+              {item.status}
+            </Text>
           </View>
         </View>
         <Text style={styles.rowAmount}>{amount}</Text>
@@ -121,6 +184,7 @@ export default function ActivityScreen() {
     );
   };
 
+  /* 🖼️ UI */
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       {/* Header */}
@@ -151,9 +215,9 @@ export default function ActivityScreen() {
       {loading && data.length === 0 ? (
         <ActivityIndicator style={{ marginTop: 24 }} />
       ) : (
-        <FlatList
-          data={data}
-          keyExtractor={(it: any, i) => it.hash || String(i)}
+        < FlatList
+          data={Array.from(new Map(data.map((tx) => [tx.hash, tx])).values())}
+          keyExtractor={(item, index) => `${item.hash}_${index}`}
           renderItem={renderRow}
           onEndReachedThreshold={0.6}
           onEndReached={() => {
@@ -171,9 +235,10 @@ export default function ActivityScreen() {
             </View>
           }
         />
+
       )}
 
-      {/* Account info */}
+      {/* Account info + Explorer + Modal */}
       <View style={styles.infoSection}>
         <Ionicons name="information-circle-outline" size={16} color="#666" />
         <View>
@@ -182,12 +247,10 @@ export default function ActivityScreen() {
         </View>
       </View>
 
-      {/* Explorer link */}
       <TouchableOpacity style={styles.explorer} onPress={openExplorerForAddress}>
         <Text style={styles.explorerText}>View full history on Etherscan</Text>
       </TouchableOpacity>
 
-      {/* Legal footnote */}
       <View style={styles.footnote}>
         <Text style={styles.footTxt}>
           Market data is provided by one or more third-party data sources,
@@ -196,7 +259,7 @@ export default function ActivityScreen() {
         </Text>
       </View>
 
-      {/* ✅ Network Selection Modal */}
+      {/* ✅ Network Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -242,6 +305,7 @@ export default function ActivityScreen() {
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   header: {

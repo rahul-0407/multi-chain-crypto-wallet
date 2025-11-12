@@ -21,40 +21,48 @@ export default function ReviewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const address = Array.isArray(params.address)
+  // ✅ Parse params safely
+  const addressParam = Array.isArray(params.address)
     ? params.address[0]
-    : (params.address as string);
-  const amount = Array.isArray(params.amount)
+    : (params.address as string | undefined);
+
+  const amountParam = Array.isArray(params.amount)
     ? params.amount[0]
     : (params.amount as string | undefined);
 
+  const [receiver, setReceiver] = useState<string>(addressParam || "");
+  const [amount, setAmount] = useState<string>(amountParam || "0.001");
+
+  // ✅ States
   const [gasFee, setGasFee] = useState<string>("0");
   const [balance, setBalance] = useState<string>("0");
+  const [usdValue, setUsdValue] = useState<string>("~$0");
+  const [sender, setSender] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [sender, setSender] = useState<string>("");
-  const [receiver, setReceiver] = useState<string>(address || "");
-  const [usdValue, setUsdValue] = useState<string>("~$0");
 
   const chainId = 11155111;
   const network = ChainManager.getChainInfo(chainId);
 
-  // 🔹 Fetch details on mount
+  // ✅ Fetch wallet, gas fee, balance
   useEffect(() => {
     const fetchDetails = async () => {
       try {
         const walletAddress = WalletService.getAddress();
-        if (walletAddress) setSender(walletAddress);
+        if (!walletAddress) throw new Error("No wallet found");
 
+        setSender(walletAddress);
+
+        // Get balance
         const provider = ChainManager.getProvider(chainId);
-        if (walletAddress) {
-          const bal = await provider.getBalance(walletAddress);
-          setBalance(ethers.utils.formatEther(bal));
-        }
+        const bal = await provider.getBalance(walletAddress);
+        setBalance(ethers.utils.formatEther(bal));
 
+        // Get gas price (approx fee)
         const gas = await ChainManager.getGasPrice(chainId);
         setGasFee(gas);
 
+        // USD estimate (mock rate)
         const ethToUsd = 3500;
         const ethAmount = parseFloat(amount || "0.001");
         const usd = (ethAmount * ethToUsd).toFixed(2);
@@ -68,44 +76,42 @@ export default function ReviewScreen() {
     fetchDetails();
   }, []);
 
-  // ✅ Send transaction
+  // ✅ Transaction confirmation logic
   const confirmSend = async () => {
-    if (!receiver || !amount) {
-      Alert.alert("Error", "Missing recipient or amount");
-      return;
+  if (!ethers.utils.isAddress(receiver)) {
+    Alert.alert("Invalid Address", "Please check the recipient address.");
+    return;
+  }
+  if (!amount || parseFloat(amount) <= 0) {
+    Alert.alert("Invalid Amount", "Please enter a valid amount.");
+    return;
+  }
+
+  setSending(true); // show spinner immediately
+
+  // ✅ yield control back to React so it can re-render before heavy work
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  try {
+    const result = await TransactionService.sendTransaction(receiver, amount, chainId);
+
+    if (result.success) {
+      // ✅ Auto redirect to Activity page directly
+      router.push({
+        pathname: "/(tabs)/activity",
+        params: { txHash: result.hash },
+      });
+    } else {
+      Alert.alert("Transaction Failed ❌", result.error);
     }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    Alert.alert("Transaction Error", message);
+  } finally {
+    setSending(false);
+  }
+};
 
-    try {
-      setSending(true);
-
-      const result = await TransactionService.sendTransaction(
-        receiver,
-        amount,
-        chainId
-      );
-
-      if (result.success) {
-        Alert.alert("Transaction Sent", `Hash: ${result.hash}`);
-        // Wait 2 sec for UX before redirect
-        setTimeout(() => {
-          router.push({
-            pathname: "/(tabs)/activity",
-            params: { txHash: result.hash },
-          });
-        }, 2000);
-      } else {
-        Alert.alert("Transaction Failed", result.error);
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        Alert.alert("Transaction Error", err.message);
-      } else {
-        Alert.alert("Unknown Error", String(err));
-      }
-    } finally {
-      setSending(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -118,25 +124,26 @@ export default function ReviewScreen() {
         <View style={{ width: 28 }} />
       </View>
 
+      {/* Main Content */}
       <View style={styles.content}>
         {/* Amount Section */}
         <View style={styles.amountSection}>
           <View style={styles.iconContainer}>
             <View style={styles.mainIcon}>
-              <Text style={styles.iconText}>S</Text>
+              <Text style={styles.iconText}>Ξ</Text>
             </View>
             <View style={styles.badgeIcon}>
-              <Text style={styles.badgeText}>s</Text>
+              <Text style={styles.badgeText}>ETH</Text>
             </View>
           </View>
 
           <Text style={styles.amountText}>
-            {amount || "0.001"} {network?.symbol || "SepoliaETH"}
+            {amount} {network?.symbol || "SepoliaETH"}
           </Text>
           <Text style={styles.usdText}>{usdValue}</Text>
         </View>
 
-        {/* Account Cards */}
+        {/* From/To Accounts */}
         <View style={styles.accountsContainer}>
           <View style={styles.accountCard}>
             <View style={styles.accountLeft}>
@@ -146,7 +153,9 @@ export default function ReviewScreen() {
               <View>
                 <Text style={styles.accountTitle}>From</Text>
                 <Text style={styles.accountSubtitle}>
-                  {sender ? `${sender.slice(0, 8)}...${sender.slice(-6)}` : "Loading..."}
+                  {sender
+                    ? `${sender.slice(0, 8)}...${sender.slice(-6)}`
+                    : "Loading..."}
                 </Text>
               </View>
             </View>
@@ -193,7 +202,7 @@ export default function ReviewScreen() {
               <View style={styles.feeContainer}>
                 <Ionicons name="create-outline" size={16} color="#6B7EFF" />
                 <Text style={styles.detailValue}>
-                  {gasFee} {network?.symbol || "SepoliaETH"}
+                  {gasFee} {network?.symbol || "ETH"}
                 </Text>
               </View>
             )}
@@ -202,7 +211,7 @@ export default function ReviewScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Speed</Text>
             <View style={styles.speedContainer}>
-              <Text style={styles.speedIcon}>🦊</Text>
+              <Text style={styles.speedIcon}>⚡</Text>
               <Text style={styles.detailValue}>Market ~ 12 sec</Text>
             </View>
           </View>
@@ -241,7 +250,7 @@ export default function ReviewScreen() {
   );
 }
 
-// Styles (same as before)
+/* ----------------------- Styles ----------------------- */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   header: {
@@ -287,7 +296,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#FFF",
   },
-  badgeText: { fontSize: 14, fontWeight: "600", color: "#FFF" },
+  badgeText: { fontSize: 11, fontWeight: "600", color: "#FFF" },
   amountText: { fontSize: 24, fontWeight: "700", color: "#000", marginBottom: 4 },
   usdText: { fontSize: 16, color: "#999" },
   accountsContainer: { marginTop: 16, gap: 8 },
