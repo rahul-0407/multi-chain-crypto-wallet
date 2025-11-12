@@ -11,25 +11,35 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { ethers } from "ethers";
+
 import ChainManager from "../../../services/ChainManager";
 import WalletService from "../../../services/WalletService";
-import { ethers } from "ethers";
+import TransactionService from "../../../services/TransactionService";
 
 export default function ReviewScreen() {
   const router = useRouter();
-  const { address, amount } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+
+  const address = Array.isArray(params.address)
+    ? params.address[0]
+    : (params.address as string);
+  const amount = Array.isArray(params.amount)
+    ? params.amount[0]
+    : (params.amount as string | undefined);
 
   const [gasFee, setGasFee] = useState<string>("0");
   const [balance, setBalance] = useState<string>("0");
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const [sender, setSender] = useState<string>("");
-  const [receiver, setReceiver] = useState<string>(String(address));
+  const [receiver, setReceiver] = useState<string>(address || "");
   const [usdValue, setUsdValue] = useState<string>("~$0");
 
-  const chainId = 11155111; // Sepolia testnet
+  const chainId = 11155111;
   const network = ChainManager.getChainInfo(chainId);
 
-  // 🔹 Load wallet & network info
+  // 🔹 Fetch details on mount
   useEffect(() => {
     const fetchDetails = async () => {
       try {
@@ -37,37 +47,63 @@ export default function ReviewScreen() {
         if (walletAddress) setSender(walletAddress);
 
         const provider = ChainManager.getProvider(chainId);
-        const bal = await provider.getBalance(walletAddress);
-        setBalance(ethers.utils.formatEther(bal));
+        if (walletAddress) {
+          const bal = await provider.getBalance(walletAddress);
+          setBalance(ethers.utils.formatEther(bal));
+        }
 
         const gas = await ChainManager.getGasPrice(chainId);
         setGasFee(gas);
 
-        // Just for display — using dummy conversion for now
-        const ethToUsd = 3500; // approximate (you can integrate CoinGecko API later)
-        const usd = (parseFloat(amount || "0.001") * ethToUsd).toFixed(2);
+        const ethToUsd = 3500;
+        const ethAmount = parseFloat(amount || "0.001");
+        const usd = (ethAmount * ethToUsd).toFixed(2);
         setUsdValue(`≈ $${usd}`);
-
-        setLoading(false);
       } catch (e) {
         console.error("Error loading review data:", e);
+      } finally {
         setLoading(false);
       }
     };
-
     fetchDetails();
   }, []);
 
-  // 🔹 Confirm Send — placeholder (can later integrate TransactionService)
+  // ✅ Send transaction
   const confirmSend = async () => {
+    if (!receiver || !amount) {
+      Alert.alert("Error", "Missing recipient or amount");
+      return;
+    }
+
     try {
-      Alert.alert(
-        "Transaction Initiated",
-        `Sending ${amount || "0.001"} ${network?.symbol} to ${receiver}`,
-        [{ text: "OK", onPress: () => router.push("/(tabs)/activity") }]
+      setSending(true);
+
+      const result = await TransactionService.sendTransaction(
+        receiver,
+        amount,
+        chainId
       );
-    } catch (err) {
-      Alert.alert("Transaction Failed", err.message);
+
+      if (result.success) {
+        Alert.alert("Transaction Sent", `Hash: ${result.hash}`);
+        // Wait 2 sec for UX before redirect
+        setTimeout(() => {
+          router.push({
+            pathname: "/(tabs)/activity",
+            params: { txHash: result.hash },
+          });
+        }, 2000);
+      } else {
+        Alert.alert("Transaction Failed", result.error);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        Alert.alert("Transaction Error", err.message);
+      } else {
+        Alert.alert("Unknown Error", String(err));
+      }
+    } finally {
+      setSending(false);
     }
   };
 
@@ -83,7 +119,7 @@ export default function ReviewScreen() {
       </View>
 
       <View style={styles.content}>
-        {/* Token Icon and Amount */}
+        {/* Amount Section */}
         <View style={styles.amountSection}>
           <View style={styles.iconContainer}>
             <View style={styles.mainIcon}>
@@ -102,14 +138,13 @@ export default function ReviewScreen() {
 
         {/* Account Cards */}
         <View style={styles.accountsContainer}>
-          {/* Sender */}
           <View style={styles.accountCard}>
             <View style={styles.accountLeft}>
               <View style={[styles.accountIcon, { backgroundColor: "#FF9B71" }]}>
                 <Ionicons name="repeat" size={20} color="#FFF" />
               </View>
               <View>
-                <Text style={styles.accountTitle}>Account 1</Text>
+                <Text style={styles.accountTitle}>From</Text>
                 <Text style={styles.accountSubtitle}>
                   {sender ? `${sender.slice(0, 8)}...${sender.slice(-6)}` : "Loading..."}
                 </Text>
@@ -118,14 +153,13 @@ export default function ReviewScreen() {
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
 
-          {/* Receiver */}
           <View style={styles.accountCard}>
             <View style={styles.accountLeft}>
               <View style={[styles.accountIcon, { backgroundColor: "#A8E6A3" }]}>
                 <Ionicons name="wallet" size={20} color="#FFF" />
               </View>
               <View>
-                <Text style={styles.accountTitle}>Recipient</Text>
+                <Text style={styles.accountTitle}>To</Text>
                 <Text style={styles.accountSubtitle}>
                   {receiver
                     ? `${receiver.slice(0, 8)}...${receiver.slice(-6)}`
@@ -136,7 +170,7 @@ export default function ReviewScreen() {
           </View>
         </View>
 
-        {/* Network Section */}
+        {/* Network Info */}
         <View style={styles.detailsCard}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Network</Text>
@@ -181,20 +215,22 @@ export default function ReviewScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Bottom Buttons */}
+      {/* Footer Buttons */}
       <View style={styles.bottomButtons}>
         <TouchableOpacity
           style={[styles.btn, styles.cancelBtn]}
           onPress={() => router.back()}
+          disabled={sending}
         >
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.btn, styles.confirmBtn]}
           onPress={confirmSend}
-          disabled={loading}
+          disabled={sending}
         >
-          {loading ? (
+          {sending ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.confirmText}>Confirm</Text>
@@ -205,8 +241,8 @@ export default function ReviewScreen() {
   );
 }
 
+// Styles (same as before)
 const styles = StyleSheet.create({
-  // (Keep your original style definitions — unchanged)
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   header: {
     flexDirection: "row",
