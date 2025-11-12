@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -14,29 +15,96 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { ethers } from "ethers";
+import ChainManager from "../../../services/ChainManager";
 
 export default function RecipientScreen() {
   const router = useRouter();
   const [address, setAddress] = useState("");
-  const [isValid, setIsValid] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<"idle" | "invalid" | "validating" | "valid">("idle");
 
-  // Validate address on change
-  useEffect(() => {
-    setIsValid(ethers.utils.isAddress(address.trim()));
-  }, [address]);
+  const chainId = 11155111; // Sepolia for now
+  const provider = ChainManager.getProvider(chainId);
 
-  // Paste from clipboard
+  // 🧠 Address validation function
+  const validateAddress = async (addr: string) => {
+    if (!ethers.utils.isAddress(addr)) return false;
+    try {
+      const code = await provider.getCode(addr);
+      const balance = await provider.getBalance(addr);
+      return code !== "0x" || balance.gt(0);
+    } catch {
+      return false;
+    }
+  };
+
+  // 📋 Paste button
   const handlePaste = async () => {
     const text = await Clipboard.getStringAsync();
     setAddress(text.trim());
   };
 
-  // Go to Review screen
-  const handleReview = () => {
-    router.push({
-      pathname: "/(tabs)/(send)/review",
-      params: { address },
-    });
+  // 🕹️ Auto validation logic
+  useEffect(() => {
+    const checkAddress = async () => {
+      if (address.length === 42) {
+        setStatus("validating");
+        setLoading(true);
+        const exists = await validateAddress(address.trim());
+        if (exists) {
+          setStatus("valid");
+          setTimeout(() => {
+            router.push({
+              pathname: "/(tabs)/(send)/review",
+              params: { address },
+            });
+          }, 500);
+        } else {
+          setStatus("invalid");
+        }
+        setLoading(false);
+      } else if (address.length > 0 && address.length < 42) {
+        setStatus("invalid");
+      } else {
+        setStatus("idle");
+      }
+    };
+
+    checkAddress();
+  }, [address]);
+
+  // 🧭 Button state renderer
+  const renderButton = () => {
+    if (status === "idle") return null;
+    if (status === "invalid") {
+      return (
+        <View style={[styles.actionBtn, { backgroundColor: "#e11d48" }]}>
+          <Text style={styles.btnText}>Invalid Address</Text>
+        </View>
+      );
+    }
+    if (status === "validating") {
+      return (
+        <View style={[styles.actionBtn, { backgroundColor: "#666" }]}>
+          <ActivityIndicator color="#fff" />
+        </View>
+      );
+    }
+    if (status === "valid") {
+      return (
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: "#000" }]}
+          onPress={() =>
+            router.push({
+              pathname: "/(tabs)/(send)/review",
+              params: { address },
+            })
+          }
+        >
+          <Text style={styles.btnText}>Review</Text>
+        </TouchableOpacity>
+      );
+    }
   };
 
   return (
@@ -52,7 +120,7 @@ export default function RecipientScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Input */}
+      {/* Input Field */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -80,16 +148,14 @@ export default function RecipientScreen() {
           </View>
           <View>
             <Text style={styles.accountName}>Account 1</Text>
-            <Text style={styles.accountAddress}>0xc096DeAae62D58AD86A9c3714D1186d7C9b666f0</Text>
+            <Text style={styles.accountAddress}>
+              0xc096DeAae62D58AD86A9c3714D1186d7C9b666f0
+            </Text>
           </View>
         </TouchableOpacity>
 
-        {/* Review button appears only when address valid */}
-        {isValid && (
-          <TouchableOpacity style={styles.reviewBtn} onPress={handleReview}>
-            <Text style={styles.reviewText}>Review</Text>
-          </TouchableOpacity>
-        )}
+        {/* Dynamic button at bottom */}
+        {renderButton()}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -138,8 +204,7 @@ const styles = StyleSheet.create({
   },
   accountName: { fontSize: 15, fontWeight: "600" },
   accountAddress: { color: "#777", fontSize: 13 },
-  reviewBtn: {
-    backgroundColor: "#000",
+  actionBtn: {
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
@@ -148,5 +213,5 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
   },
-  reviewText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });

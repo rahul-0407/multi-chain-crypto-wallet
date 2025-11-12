@@ -6,92 +6,199 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import ChainManager from "../../../services/ChainManager";
 import WalletService from "../../../services/WalletService";
+import { ethers } from "ethers";
 
 export default function ReviewScreen() {
   const router = useRouter();
-  const { address } = useLocalSearchParams();
-  const [gasFee, setGasFee] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { address, amount } = useLocalSearchParams();
 
-  const chainId = 11155111; // You can replace this with selectedChain.id
+  const [gasFee, setGasFee] = useState<string>("0");
+  const [balance, setBalance] = useState<string>("0");
+  const [loading, setLoading] = useState(true);
+  const [sender, setSender] = useState<string>("");
+  const [receiver, setReceiver] = useState<string>(String(address));
+  const [usdValue, setUsdValue] = useState<string>("~$0");
+
+  const chainId = 11155111; // Sepolia testnet
   const network = ChainManager.getChainInfo(chainId);
 
+  // 🔹 Load wallet & network info
   useEffect(() => {
-    const loadGas = async () => {
-      const fee = await ChainManager.getGasPrice(chainId);
-      setGasFee(fee);
-      setLoading(false);
+    const fetchDetails = async () => {
+      try {
+        const walletAddress = WalletService.getAddress();
+        if (walletAddress) setSender(walletAddress);
+
+        const provider = ChainManager.getProvider(chainId);
+        const bal = await provider.getBalance(walletAddress);
+        setBalance(ethers.utils.formatEther(bal));
+
+        const gas = await ChainManager.getGasPrice(chainId);
+        setGasFee(gas);
+
+        // Just for display — using dummy conversion for now
+        const ethToUsd = 3500; // approximate (you can integrate CoinGecko API later)
+        const usd = (parseFloat(amount || "0.001") * ethToUsd).toFixed(2);
+        setUsdValue(`≈ $${usd}`);
+
+        setLoading(false);
+      } catch (e) {
+        console.error("Error loading review data:", e);
+        setLoading(false);
+      }
     };
-    loadGas();
+
+    fetchDetails();
   }, []);
 
+  // 🔹 Confirm Send — placeholder (can later integrate TransactionService)
   const confirmSend = async () => {
-    router.push("/(tabs)/activity"); // you can later integrate TransactionService here
+    try {
+      Alert.alert(
+        "Transaction Initiated",
+        `Sending ${amount || "0.001"} ${network?.symbol} to ${receiver}`,
+        [{ text: "OK", onPress: () => router.push("/(tabs)/activity") }]
+      );
+    } catch (err) {
+      Alert.alert("Transaction Failed", err.message);
+    }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff", padding: 16 }}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>Review</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: 28 }} />
       </View>
 
-      {/* Amount */}
-      <View style={styles.amountSection}>
-        <Text style={styles.amountText}>0.001 {network?.symbol}</Text>
-        <Text style={styles.usdText}>≈ $0</Text>
-      </View>
+      <View style={styles.content}>
+        {/* Token Icon and Amount */}
+        <View style={styles.amountSection}>
+          <View style={styles.iconContainer}>
+            <View style={styles.mainIcon}>
+              <Text style={styles.iconText}>S</Text>
+            </View>
+            <View style={styles.badgeIcon}>
+              <Text style={styles.badgeText}>s</Text>
+            </View>
+          </View>
 
-      {/* Accounts */}
-      <View style={styles.accountRow}>
-        <Text style={styles.label}>From</Text>
-        <Text style={styles.value}>Account 1</Text>
-      </View>
-
-      <View style={styles.accountRow}>
-        <Text style={styles.label}>To</Text>
-        <Text style={styles.value}>{String(address).slice(0, 8)}...</Text>
-      </View>
-
-      {/* Network Info */}
-      <View style={styles.networkBox}>
-        <Text style={styles.netLabel}>Network</Text>
-        <Text style={styles.netValue}>{network?.name}</Text>
-
-        <Text style={styles.netLabel}>Network Fee</Text>
-        {loading ? (
-          <ActivityIndicator />
-        ) : (
-          <Text style={styles.netValue}>
-            {gasFee} {network?.symbol}
+          <Text style={styles.amountText}>
+            {amount || "0.001"} {network?.symbol || "SepoliaETH"}
           </Text>
-        )}
-        <Text style={styles.speedText}>Speed: Market ~12 sec</Text>
+          <Text style={styles.usdText}>{usdValue}</Text>
+        </View>
+
+        {/* Account Cards */}
+        <View style={styles.accountsContainer}>
+          {/* Sender */}
+          <View style={styles.accountCard}>
+            <View style={styles.accountLeft}>
+              <View style={[styles.accountIcon, { backgroundColor: "#FF9B71" }]}>
+                <Ionicons name="repeat" size={20} color="#FFF" />
+              </View>
+              <View>
+                <Text style={styles.accountTitle}>Account 1</Text>
+                <Text style={styles.accountSubtitle}>
+                  {sender ? `${sender.slice(0, 8)}...${sender.slice(-6)}` : "Loading..."}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </View>
+
+          {/* Receiver */}
+          <View style={styles.accountCard}>
+            <View style={styles.accountLeft}>
+              <View style={[styles.accountIcon, { backgroundColor: "#A8E6A3" }]}>
+                <Ionicons name="wallet" size={20} color="#FFF" />
+              </View>
+              <View>
+                <Text style={styles.accountTitle}>Recipient</Text>
+                <Text style={styles.accountSubtitle}>
+                  {receiver
+                    ? `${receiver.slice(0, 8)}...${receiver.slice(-6)}`
+                    : "Loading..."}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Network Section */}
+        <View style={styles.detailsCard}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Network</Text>
+            <View style={styles.networkBadge}>
+              <View style={styles.networkIconSmall}>
+                <Text style={styles.networkIconText}>s</Text>
+              </View>
+              <Text style={styles.detailValue}>{network?.name || "Sepolia"}</Text>
+            </View>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.labelWithIcon}>
+              <Text style={styles.detailLabel}>Network Fee</Text>
+              <Ionicons name="information-circle-outline" size={16} color="#999" />
+            </View>
+            {loading ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <View style={styles.feeContainer}>
+                <Ionicons name="create-outline" size={16} color="#6B7EFF" />
+                <Text style={styles.detailValue}>
+                  {gasFee} {network?.symbol || "SepoliaETH"}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Speed</Text>
+            <View style={styles.speedContainer}>
+              <Text style={styles.speedIcon}>🦊</Text>
+              <Text style={styles.detailValue}>Market ~ 12 sec</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Advanced Details */}
+        <TouchableOpacity style={styles.advancedButton}>
+          <Text style={styles.advancedText}>Advanced details</Text>
+          <Ionicons name="chevron-forward" size={20} color="#999" />
+        </TouchableOpacity>
       </View>
 
-      {/* Buttons */}
+      {/* Bottom Buttons */}
       <View style={styles.bottomButtons}>
         <TouchableOpacity
-          style={[styles.btn, styles.cancel]}
+          style={[styles.btn, styles.cancelBtn]}
           onPress={() => router.back()}
         >
-          <Text style={styles.btnTextCancel}>Cancel</Text>
+          <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.btn, styles.confirm]}
+          style={[styles.btn, styles.confirmBtn]}
           onPress={confirmSend}
+          disabled={loading}
         >
-          <Text style={styles.btnTextConfirm}>Confirm</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.confirmText}>Confirm</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -99,41 +206,129 @@ export default function ReviewScreen() {
 }
 
 const styles = StyleSheet.create({
+  // (Keep your original style definitions — unchanged)
+  container: { flex: 1, backgroundColor: "#F5F5F5" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFF",
   },
-  title: { fontSize: 22, fontWeight: "700" },
-  amountSection: { alignItems: "center", marginBottom: 16 },
-  amountText: { fontSize: 24, fontWeight: "700" },
-  usdText: { color: "#777" },
-  accountRow: {
+  backButton: { padding: 4 },
+  title: { fontSize: 18, fontWeight: "600", color: "#000" },
+  content: { flex: 1, paddingHorizontal: 16 },
+  amountSection: {
+    alignItems: "center",
+    paddingVertical: 32,
+    backgroundColor: "#FFF",
+    marginTop: 8,
+    borderRadius: 16,
+  },
+  iconContainer: { position: "relative", marginBottom: 16 },
+  mainIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#FFF",
+    borderWidth: 2,
+    borderColor: "#E5E5E5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  iconText: { fontSize: 28, fontWeight: "700", color: "#000" },
+  badgeIcon: {
+    position: "absolute",
+    bottom: -4,
+    right: -4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#B8A4E8",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#FFF",
+  },
+  badgeText: { fontSize: 14, fontWeight: "600", color: "#FFF" },
+  amountText: { fontSize: 24, fontWeight: "700", color: "#000", marginBottom: 4 },
+  usdText: { fontSize: 16, color: "#999" },
+  accountsContainer: { marginTop: 16, gap: 8 },
+  accountCard: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginVertical: 8,
-  },
-  label: { color: "#555" },
-  value: { fontWeight: "600" },
-  networkBox: {
-    backgroundColor: "#f9f9f9",
-    padding: 12,
+    alignItems: "center",
+    backgroundColor: "#FFF",
+    padding: 16,
     borderRadius: 12,
-    marginVertical: 14,
   },
-  netLabel: { color: "#666", marginTop: 6 },
-  netValue: { fontWeight: "600" },
-  speedText: { color: "#888", fontSize: 13, marginTop: 6 },
+  accountLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  accountIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  accountTitle: { fontSize: 16, fontWeight: "600", color: "#000", marginBottom: 2 },
+  accountSubtitle: { fontSize: 13, color: "#999" },
+  detailsCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    gap: 16,
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  detailLabel: { fontSize: 15, color: "#666" },
+  labelWithIcon: { flexDirection: "row", alignItems: "center", gap: 4 },
+  detailValue: { fontSize: 15, fontWeight: "600", color: "#000" },
+  networkBadge: { flexDirection: "row", alignItems: "center", gap: 8 },
+  networkIconSmall: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#B8A4E8",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  networkIconText: { fontSize: 11, fontWeight: "600", color: "#FFF" },
+  feeContainer: { flexDirection: "row", alignItems: "center", gap: 6 },
+  speedContainer: { flexDirection: "row", alignItems: "center", gap: 6 },
+  speedIcon: { fontSize: 16 },
+  advancedButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FFF",
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  advancedText: { fontSize: 15, color: "#000" },
   bottomButtons: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: "auto",
-    gap: 10,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: "#FFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E5E5",
   },
-  btn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center" },
-  cancel: { backgroundColor: "#eee" },
-  confirm: { backgroundColor: "#000" },
-  btnTextCancel: { color: "#000", fontWeight: "700" },
-  btnTextConfirm: { color: "#fff", fontWeight: "700" },
+  btn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelBtn: { backgroundColor: "#F0F0F0" },
+  confirmBtn: { backgroundColor: "#000" },
+  cancelText: { fontSize: 16, fontWeight: "600", color: "#000" },
+  confirmText: { fontSize: 16, fontWeight: "600", color: "#FFF" },
 });
