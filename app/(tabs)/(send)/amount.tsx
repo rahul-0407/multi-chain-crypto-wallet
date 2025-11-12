@@ -28,7 +28,11 @@ export default function AmountScreen() {
       return;
     }
     setError(false);
-    router.push("/(tabs)/(send)/recipient");
+    router.push({
+      pathname: "/(tabs)/(send)/recipient",
+      params: { amount },
+    });
+
   };
 
   const handleInput = (value: string) => {
@@ -53,7 +57,7 @@ export default function AmountScreen() {
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Send</Text>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.push("/")}>
           <Ionicons name="close" size={22} color="#000" />
         </TouchableOpacity>
       </View>

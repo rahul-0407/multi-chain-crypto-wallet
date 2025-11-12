@@ -19,12 +19,14 @@ import { SUPPORTED_CHAINS } from '../../utils/constants';
 import { formatAddress, formatBalance, formatUSD } from '../../utils/formatters';
 import { getUsdValue } from "../../utils/pricing";
 import { router } from "expo-router";
+import ComingSoonModal from "../../components/ComingSoonModal";
 
 export default function App() {
   const { wallet, balances, loading, refreshBalances, selectedChain, setSelectedChain, tokenList } = useWallet();
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
  useFocusEffect(
   React.useCallback(() => {
@@ -94,10 +96,10 @@ const totalUsdValue = tokenList.reduce(
 
         {/* Action Buttons */}
         <View style={styles.actionRow}>
-          <ActionButton icon="cash-outline" label="Buy" />
-          <ActionButton icon="swap-vertical-outline" label="Swap" />
-          <ActionButton onPress={() => router.push("/(tabs)/(send)")} icon="send-outline" label="Send" />
-          <ActionButton icon="arrow-down-outline" label="Receive" />
+          <ActionButton onPress={() => setShowComingSoon(true)} icon="cash-outline" label="Buy" />
+          <ActionButton onPress={() => router.push("/(tabs)/swap")} icon="swap-vertical-outline" label="Swap" />
+          <ActionButton onPress={() => router.push("/(tabs)/(send)/send")} icon="send-outline" label="Send" />
+          <ActionButton onPress={() => router.push("/(tabs)/rewards")} icon="arrow-down-outline" label="Receive" />
         </View>
 
         {/* Tabs */}
@@ -319,6 +321,12 @@ const totalUsdValue = tokenList.reduce(
           </View>
         </View>
       </Modal>
+      <ComingSoonModal
+        visible={showComingSoon}
+        onClose={() => setShowComingSoon(false)}
+        title="Buy Feature"
+        message="Buying crypto will be available soon!"
+      />
     </SafeAreaView>
   );
 }

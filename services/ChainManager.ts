@@ -2,6 +2,9 @@ import { ethers } from 'ethers';
 import { SUPPORTED_CHAINS } from '../utils/constants';
 
 class ChainManager {
+  formatEther(value: ethers.BigNumber): string {
+    throw new Error("Method not implemented.");
+  }
   providers: Record<number, ethers.providers.JsonRpcProvider> = {};
 
   constructor() {

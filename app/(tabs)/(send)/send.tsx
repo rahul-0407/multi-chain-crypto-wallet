@@ -21,7 +21,7 @@ export default function SendSelectScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Send</Text>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.replace("/")}>
           <Ionicons name="close" size={24} color="#000" />
         </TouchableOpacity>
       </View>

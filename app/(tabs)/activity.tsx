@@ -1,4 +1,3 @@
-// app/(activity)/index.tsx
 import React, {
   useEffect,
   useMemo,
@@ -6,6 +5,8 @@ import React, {
   useCallback,
   useRef,
 } from "react";
+import { ethers } from "ethers";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -33,7 +34,7 @@ import ChainManager from "../../services/ChainManager";
 type TabKey = "Transactions" | "Transfers" | "Perps";
 
 export default function ActivityScreen() {
-  const { wallet, selectedChain, setSelectedChain } = useWallet();
+  const { wallet, selectedChain, setSelectedChain, refreshBalances } = useWallet();
   const params = useLocalSearchParams();
   const txHashParam = Array.isArray(params.txHash)
     ? params.txHash[0]
@@ -44,13 +45,13 @@ export default function ActivityScreen() {
   const [page, setPage] = useState(1);
   const [nativeTxs, setNativeTxs] = useState<any[]>([]);
   const [tokenTxs, setTokenTxs] = useState<any[]>([]);
-  const [pendingTx, setPendingTx] = useState<any | null>(null);
+  const [trackedTx, setTrackedTx] = useState<any | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
   const onEndReachedCalledDuringMomentum = useRef(false);
   const address = wallet?.address || "";
 
-  /* 🌀 Fetch normal txs */
+  /* 🌀 Load existing txs */
   const reload = useCallback(async () => {
     if (!address) return;
     setLoading(true);
@@ -71,43 +72,68 @@ export default function ActivityScreen() {
     reload();
   }, [address, selectedChain.id]);
 
-  /* 🧩 Handle pending tx from confirm page */
+  /* 🔥 Real-Time Tx Tracker */
   useEffect(() => {
     if (!txHashParam) return;
-    const now = Date.now();
-
-    const tempTx = {
-      hash: txHashParam,
-      from: address,
-      to: "",
-      time: Math.floor(now / 1000),
-      valueEth: "0.001",
-      status: "Pending",
-    };
-    setPendingTx(tempTx);
-
-    // Start polling for confirmation
     const provider = ChainManager.getProvider(selectedChain.id);
-    const interval = setInterval(async () => {
+    let isActive = true;
+    let interval: any;
+
+    const initTx = async () => {
+      try {
+        const tx = await provider.getTransaction(txHashParam);
+        const tempTx = {
+          hash: txHashParam,
+          from: tx?.from || address,
+          to: tx?.to || "",
+          valueEth: tx?.value
+            ? Number(ethers.utils.formatEther(tx.value)).toPrecision(6)
+            : "0.000000",
+
+          time: Math.floor(Date.now() / 1000),
+          status: "Pending",
+        };
+        setTrackedTx(tempTx);
+      } catch {
+        setTrackedTx({
+          hash: txHashParam,
+          from: address,
+          to: "",
+          valueEth: "0.0",
+          status: "Pending",
+        });
+      }
+    };
+
+    const pollStatus = async () => {
       try {
         const receipt = await provider.getTransactionReceipt(txHashParam);
-        if (receipt && receipt.confirmations > 0) {
+        if (receipt) {
+          if (receipt.status === 1) {
+            setTrackedTx((prev: any) => prev && { ...prev, status: "Confirmed" });
+            refreshBalances(); // 🔄 auto update wallet balance
+          } else {
+            setTrackedTx((prev: any) => prev && { ...prev, status: "Failed" });
+          }
           clearInterval(interval);
-          setPendingTx((prev: any) =>
-            prev ? { ...prev, status: "Confirmed" } : prev
-          );
-          // refresh list from chain
           reload();
         }
-      } catch (e) {
-        console.log("poll error:", e);
+      } catch (err) {
+        console.log("Tracking error:", err);
       }
-    }, 5000); // every 5s
+    };
 
-    return () => clearInterval(interval);
+    initTx();
+    interval = setInterval(pollStatus, 5000);
+    pollStatus();
+
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
   }, [txHashParam, selectedChain.id]);
 
-  /* 🧾 Merge txs */
+  /* 🧾 Merge txs (deduplicated) */
   const data = useMemo(() => {
     const base =
       activeTab === "Transactions"
@@ -115,10 +141,13 @@ export default function ActivityScreen() {
         : activeTab === "Transfers"
           ? tokenTxs
           : [];
-    return pendingTx && activeTab === "Transactions"
-      ? [pendingTx, ...base]
-      : base;
-  }, [activeTab, nativeTxs, tokenTxs, pendingTx]);
+    if (trackedTx && activeTab === "Transactions") {
+      const combined = [trackedTx, ...base];
+      // deduplicate by hash
+      return Array.from(new Map(combined.map((tx) => [tx.hash, tx])).values());
+    }
+    return base;
+  }, [activeTab, nativeTxs, tokenTxs, trackedTx]);
 
   /* 🚀 Infinite Scroll */
   const loadMore = async () => {
@@ -139,9 +168,6 @@ export default function ActivityScreen() {
     }
   };
 
-  const openExplorerForAddress = () =>
-    Linking.openURL(explorerAddressUrl(address, selectedChain.id));
-
   /* 🎨 Row */
   const renderRow = ({ item }: { item: any }) => {
     const isSend = item.from?.toLowerCase() === address.toLowerCase();
@@ -151,18 +177,15 @@ export default function ActivityScreen() {
     const amount = `${item.valueEth ?? item.value ?? "0"} ${selectedChain.symbol}`;
 
     const statusColor =
-      item.status === "Pending"
-        ? "#f59e0b"
-        : item.status === "Failed"
-          ? "#ef4444"
-          : "#16a34a";
+      item.status?.includes("Pending") ? "#f59e0b" :
+        item.status?.includes("Failed") ? "#ef4444" :
+          item.status?.includes("Confirmed") ? "#16a34a" :
+            "#666";
 
     return (
       <TouchableOpacity
         style={styles.row}
-        onPress={() =>
-          Linking.openURL(explorerTxUrl(item.hash, selectedChain.id))
-        }
+        onPress={() => Linking.openURL(explorerTxUrl(item.hash, selectedChain.id))}
       >
         <View style={styles.rowLeft}>
           <View style={styles.avatar}>
@@ -215,8 +238,8 @@ export default function ActivityScreen() {
       {loading && data.length === 0 ? (
         <ActivityIndicator style={{ marginTop: 24 }} />
       ) : (
-        < FlatList
-          data={Array.from(new Map(data.map((tx) => [tx.hash, tx])).values())}
+        <FlatList
+          data={data}
           keyExtractor={(item, index) => `${item.hash}_${index}`}
           renderItem={renderRow}
           onEndReachedThreshold={0.6}
@@ -235,10 +258,9 @@ export default function ActivityScreen() {
             </View>
           }
         />
-
       )}
 
-      {/* Account info + Explorer + Modal */}
+      {/* Footer Info */}
       <View style={styles.infoSection}>
         <Ionicons name="information-circle-outline" size={16} color="#666" />
         <View>
@@ -247,29 +269,18 @@ export default function ActivityScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.explorer} onPress={openExplorerForAddress}>
+      <TouchableOpacity style={styles.explorer} onPress={() => Linking.openURL(explorerAddressUrl(address, selectedChain.id))}>
         <Text style={styles.explorerText}>View full history on Etherscan</Text>
       </TouchableOpacity>
 
-      <View style={styles.footnote}>
-        <Text style={styles.footTxt}>
-          Market data is provided by one or more third-party data sources,
-          including CoinGecko. Such content is for informational purposes and
-          should not be treated as advice.
-        </Text>
-      </View>
-
-      {/* ✅ Network Modal */}
+      {/* Network Modal */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setModalVisible(false)}
-        />
+        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)} />
         <View style={styles.modalContainer}>
           <View style={styles.modalHandle} />
           <Text style={styles.modalTitle}>Networks</Text>
@@ -306,7 +317,7 @@ export default function ActivityScreen() {
   );
 }
 
-
+/* ----------------------- Styles ----------------------- */
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
@@ -362,7 +373,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rowTitle: { fontWeight: "700" },
-  rowSub: { color: "#16a34a", marginTop: 2 },
+  rowSub: { marginTop: 2, fontWeight: "500" },
   rowAmount: { fontWeight: "600" },
   infoSection: {
     backgroundColor: "#f8f8f8",
@@ -376,14 +387,7 @@ const styles = StyleSheet.create({
   infoDate: { color: "#666", fontSize: 13 },
   explorer: { alignItems: "center", paddingVertical: 16 },
   explorerText: { color: "#2563eb", fontWeight: "600" },
-  footnote: { paddingHorizontal: 16, paddingBottom: 20 },
-  footTxt: { color: "#666", fontSize: 12, lineHeight: 18 },
-
-  // ✅ Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   modalContainer: {
     position: "absolute",
     bottom: 0,
@@ -419,9 +423,5 @@ const styles = StyleSheet.create({
   chainItemActive: {
     backgroundColor: "#f1f5ff",
   },
-  chainItemText: {
-    fontSize: 16,
-    marginLeft: 10,
-    color: "#000",
-  },
+  chainItemText: { fontSize: 16, marginLeft: 10, color: "#000" },
 });

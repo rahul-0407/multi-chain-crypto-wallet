@@ -16,12 +16,18 @@ import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { ethers } from "ethers";
 import ChainManager from "../../../services/ChainManager";
+import { useLocalSearchParams } from "expo-router";
 
 export default function RecipientScreen() {
   const router = useRouter();
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<"idle" | "invalid" | "validating" | "valid">("idle");
+
+  const params = useLocalSearchParams();
+  const amountParam = Array.isArray(params.amount)
+    ? params.amount[0]
+    : (params.amount as string | undefined);
 
   const chainId = 11155111; // Sepolia for now
   const provider = ChainManager.getProvider(chainId);
@@ -56,8 +62,9 @@ export default function RecipientScreen() {
           setTimeout(() => {
             router.push({
               pathname: "/(tabs)/(send)/review",
-              params: { address },
+              params: { address, amount: amountParam },
             });
+
           }, 500);
         } else {
           setStatus("invalid");
@@ -97,7 +104,7 @@ export default function RecipientScreen() {
           onPress={() =>
             router.push({
               pathname: "/(tabs)/(send)/review",
-              params: { address },
+              params: { address, amount: amountParam },
             })
           }
         >
@@ -115,7 +122,7 @@ export default function RecipientScreen() {
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>Send</Text>
-        <TouchableOpacity onPress={() => router.replace("/(tabs)")}>
+        <TouchableOpacity onPress={() => router.replace("/")}>
           <Ionicons name="close" size={24} color="#000" />
         </TouchableOpacity>
       </View>
