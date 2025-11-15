@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   Alert,
-} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useWallet } from '../../hooks/useWallet';
+} from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useWallet } from "../../hooks/useWallet";
 
 export default function BackupScreen() {
   const router = useRouter();
@@ -19,254 +18,286 @@ export default function BackupScreen() {
   const [revealed, setRevealed] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
-  const words = mnemonic?.split(' ') || [];
+  const words = mnemonic?.split(" ") || [];
 
   const handleContinue = async () => {
-    if (!revealed) {
-      Alert.alert('Warning', 'Please reveal and write down your seed phrase first');
-      return;
-    }
 
-    if (!confirmed) {
-      Alert.alert(
-        'Confirm Backup',
-        'Have you safely written down your seed phrase? You will not be able to recover your wallet without it.',
-        [
-          { text: 'Not Yet', style: 'cancel' },
-          {
-            text: 'Yes, Continue',
-            onPress: async () => {
-              if (mnemonic) {
-                await createWallet(mnemonic);
-                router.replace('/(tabs)');
-              }
-            },
+  // 1️⃣ User must reveal the seed words first
+  if (!revealed) {
+    Alert.alert(
+      "Warning",
+      "Please reveal and write down your seed phrase first."
+    );
+    return;
+  }
+
+  // 2️⃣ If user has NOT checked confirmation box → show alert
+  if (!confirmed) {
+    Alert.alert(
+      "Confirm Backup",
+      "Have you safely written down your seed phrase?",
+      [
+        { text: "Not Yet", style: "cancel" },
+
+        {
+          text: "Yes, Continue",
+          onPress: () => {
+            // Navigate instantly (avoid freeze)
+            router.replace("/(tabs)");
+
+            // Do heavy wallet creation in background
+            setTimeout(async () => {
+              await createWallet(mnemonic!);
+            }, 10);
           },
-        ]
-      );
-    } else {
-      if (mnemonic) {
-        await createWallet(mnemonic);
-        router.replace('/(tabs)');
-      }
-    }
-  };
+        },
+      ]
+    );
+
+    return; // stop function here
+  }
+
+  // 3️⃣ If confirmed = true → skip alert
+  router.replace("/(tabs)");
+
+  setTimeout(async () => {
+    await createWallet(mnemonic!);
+  }, 10);
+};
+
 
   return (
-    <LinearGradient colors={['#667eea', '#764ba2']} style={styles.gradient}>
-      <SafeAreaView style={styles.container}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Backup Your Wallet</Text>
-            <Text style={styles.subtitle}>
-              Write down these 12 words in order and keep them safe
-            </Text>
-          </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* TITLE */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Backup Your Wallet</Text>
+          <Text style={styles.subtitle}>
+            Write down these 12 words in order and keep them safe
+          </Text>
+        </View>
 
-          {/* Seed Phrase Display */}
-          <View style={styles.seedContainer}>
-            {!revealed ? (
-              <View style={styles.blurContainer}>
-                <Text style={styles.blurText}>Tap to reveal seed phrase</Text>
-                <TouchableOpacity
-                  style={styles.revealButton}
-                  onPress={() => setRevealed(true)}
-                >
-                  <Text style={styles.revealButtonText}>👁️ Reveal</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.wordsGrid}>
-                {words.map((word, index) => (
-                  <View key={index} style={styles.wordCard}>
-                    <Text style={styles.wordNumber}>{index + 1}</Text>
-                    <Text style={styles.wordText}>{word}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {/* Warnings */}
-          {revealed && (
-            <>
-              <View style={styles.warningBox}>
-                <Text style={styles.warningTitle}>🔒 Security Tips</Text>
-                <Text style={styles.warningText}>
-                  • Write these words on paper{'\n'}
-                  • Never share with anyone{'\n'}
-                  • Store in a safe place{'\n'}
-                  • Never take screenshots
-                </Text>
-              </View>
+        {/* SEED PHRASE CONTAINER */}
+        <View style={styles.card}>
+          {!revealed ? (
+            <View style={styles.revealContainer}>
+              <Text style={styles.revealText}>Tap to reveal seed phrase</Text>
 
               <TouchableOpacity
-                style={[styles.checkbox, confirmed && styles.checkboxChecked]}
-                onPress={() => setConfirmed(!confirmed)}
+                style={styles.revealBtn}
+                onPress={() => setRevealed(true)}
               >
-                <View style={styles.checkboxInner}>
-                  {confirmed && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <Text style={styles.checkboxText}>
-                  I have written down my seed phrase
-                </Text>
+                <Text style={styles.revealBtnText}>👁 Reveal</Text>
               </TouchableOpacity>
-            </>
+            </View>
+          ) : (
+            <View style={styles.wordsGrid}>
+              {words.map((word, index) => (
+                <View key={index} style={styles.wordBox}>
+                  <Text style={styles.wordNumber}>{index + 1}</Text>
+                  <Text style={styles.word}>{word}</Text>
+                </View>
+              ))}
+            </View>
           )}
+        </View>
 
-          {/* Continue Button */}
-          <TouchableOpacity
-            style={[styles.continueButton, (!revealed || !confirmed) && styles.continueButtonDisabled]}
-            onPress={handleContinue}
-            disabled={!revealed || !confirmed}
-          >
-            <Text style={styles.continueButtonText}>Continue to Wallet</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
-    </LinearGradient>
+        {/* WARNINGS */}
+        {revealed && (
+          <>
+            <View style={styles.warningCard}>
+              <Text style={styles.warningTitle}>Security Tips</Text>
+              <Text style={styles.warningText}>
+                • Write these words on paper{"\n"}
+                • Never share with anyone{"\n"}
+                • Never take screenshots{"\n"}
+                • Store in a safe place
+              </Text>
+            </View>
+
+            {/* CONFIRM CHECKBOX */}
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => setConfirmed(!confirmed)}
+            >
+              <View style={[styles.checkbox, confirmed && styles.checkboxChecked]}>
+                {confirmed && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.checkboxText}>
+                I have written down my seed phrase
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* CONTINUE BUTTON */}
+        <TouchableOpacity
+          style={styles.continueBtn}
+          onPress={handleContinue}
+        >
+
+          <Text style={styles.continueText}>Continue to Wallet</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
+const neon = "#D5FF00";
+
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
-  },
   container: {
     flex: 1,
+    backgroundColor: "#000",
   },
-  scrollView: {
-    flex: 1,
-  },
+
   content: {
-    padding: 24,
+    padding: 22,
+    paddingBottom: 50,
   },
+
+  /* HEADER */
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   title: {
+    color: "#fff",
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
+    fontWeight: "800",
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "#aaa",
+    fontSize: 15,
+    lineHeight: 20,
   },
-  seedContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
+
+  /* MAIN CARD */
+  card: {
+    backgroundColor: "#111",
     padding: 20,
-    marginBottom: 20,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#222",
+    marginBottom: 24,
   },
-  blurContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
+
+  /* REVEAL SECTION */
+  revealContainer: {
+    alignItems: "center",
+    paddingVertical: 50,
   },
-  blurText: {
+  revealText: {
+    color: "#888",
     fontSize: 16,
-    color: '#666',
     marginBottom: 20,
   },
-  revealButton: {
-    backgroundColor: '#667eea',
-    paddingHorizontal: 32,
+  revealBtn: {
+    backgroundColor: neon,
     paddingVertical: 12,
+    paddingHorizontal: 40,
     borderRadius: 12,
   },
-  revealButtonText: {
-    color: '#fff',
+  revealBtnText: {
+    color: "#000",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "700",
   },
+
+  /* WORD GRID */
   wordsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
-  wordCard: {
-    width: '30%',
-    backgroundColor: '#f5f5f5',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+
+  wordBox: {
+    width: "32%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    marginBottom: 12,
+    alignItems: "center",
   },
   wordNumber: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 11,
+    color: "#777",
     marginBottom: 4,
   },
-  wordText: {
+  word: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "700",
+    color: "#000",
   },
-  warningBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 16,
+
+  /* WARNINGS */
+  warningCard: {
+    backgroundColor: "#111",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: "#222",
+    padding: 16,
     marginBottom: 20,
   },
   warningTitle: {
+    color: neon,
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
+    fontWeight: "700",
+    marginBottom: 6,
   },
   warningText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: "#ccc",
     lineHeight: 20,
   },
+
+  /* CHECKBOX */
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 25,
+  },
   checkbox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
+    width: 26,
+    height: 26,
+    borderWidth: 2,
+    borderColor: neon,
+    borderRadius: 6,
+    marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
   checkboxChecked: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  checkboxInner: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#fff',
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: neon,
   },
   checkmark: {
-    color: '#fff',
+    color: "#000",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "900",
   },
   checkboxText: {
-    flex: 1,
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
   },
-  continueButton: {
-    backgroundColor: '#fff',
-    padding: 18,
+
+  /* CONTINUE BTN */
+  continueBtn: {
+    backgroundColor: "#fff",
+    paddingVertical: 16,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  continueButtonDisabled: {
-    opacity: 0.5,
+  disabledBtn: {
+    opacity: 0.3,
   },
-  continueButtonText: {
-    color: '#667eea',
+  continueText: {
+    color: "#000",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "800",
   },
 });

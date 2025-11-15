@@ -7,28 +7,26 @@ import {
   Alert,
   TextInput,
   Modal,
-  ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWallet } from '../../hooks/useWallet';
 import WalletService from '../../services/WalletService';
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const { createWallet } = useWallet();
+
   const [showImportModal, setShowImportModal] = useState(false);
   const [importMnemonic, setImportMnemonic] = useState('');
 
-  // In app/(auth)/onboarding.tsx
-const handleCreateWallet = async () => {
-  const mnemonic = await WalletService.generateMnemonic(); // Now async
-  router.push({
-    pathname: '/(auth)/backup',
-    params: { mnemonic }
-  });
-};
+  const handleCreateWallet = async () => {
+    const mnemonic = await WalletService.generateMnemonic();
+    router.push({
+      pathname: '/(auth)/backup',
+      params: { mnemonic },
+    });
+  };
 
   const handleImportWallet = async () => {
     if (!importMnemonic.trim()) {
@@ -52,235 +50,303 @@ const handleCreateWallet = async () => {
   };
 
   return (
-    <LinearGradient
-      colors={['#667eea', '#764ba2', '#f093fb']}
-      style={styles.gradient}
-    >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <View style={styles.logo}>
-              <Text style={styles.logoText}>💎</Text>
-            </View>
-            <Text style={styles.title}>Multi-Chain Wallet</Text>
-            <Text style={styles.subtitle}>
-              Secure wallet for Ethereum, Polygon & BSC
-            </Text>
-          </View>
-
-          {/* Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleCreateWallet}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.primaryButtonText}>Create New Wallet</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => setShowImportModal(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.secondaryButtonText}>Import Existing Wallet</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Warning */}
-          <View style={styles.warning}>
-            <Text style={styles.warningText}>
-              ⚠️ Never share your seed phrase with anyone. Keep it safe and secure!
-            </Text>
-          </View>
+    <SafeAreaView style={styles.container}>
+      {/* TOP LOGO BLOCK (Bibiz Layout) */}
+      <View style={styles.topLogoContainer}>
+        <View style={styles.logoBlockRow}>
+          <View style={styles.logoBlock} />
+          <View style={styles.logoBlockTall} />
         </View>
 
-        {/* Import Modal */}
-        <Modal
-          visible={showImportModal}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowImportModal(false)}
+        <View style={styles.logoBlockRow}>
+          <View style={styles.logoBlockTall} />
+          <View style={styles.logoBlock} />
+        </View>
+      </View>
+
+      {/* TEXT SECTION */}
+      <View style={styles.textWrapper}>
+        <Text style={styles.welcomeText}>Welcome To</Text>
+        <Text style={styles.appName}>Multi Wallet!</Text>
+        <Text style={styles.subText}>Let's get started!</Text>
+      </View>
+
+      {/* BUTTONS */}
+      <View style={styles.buttonsWrapper}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleCreateWallet}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Import Wallet</Text>
-              <Text style={styles.modalSubtitle}>
-                Enter your 12 or 24 word seed phrase
-              </Text>
+          <Text style={styles.primaryButtonText}>Create a new wallet</Text>
+        </TouchableOpacity>
 
-              <TextInput
-                style={styles.textArea}
-                placeholder="word1 word2 word3 ..."
-                value={importMnemonic}
-                onChangeText={setImportMnemonic}
-                multiline
-                numberOfLines={4}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => setShowImportModal(true)}
+        >
+          <Text style={styles.secondaryButtonText}>
+            Import an existing wallet
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={styles.modalCancelButton}
-                  onPress={() => {
-                    setShowImportModal(false);
-                    setImportMnemonic('');
-                  }}
-                >
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
+      {/* FOOTER */}
+      <Text style={styles.footer}>BIBIZ 2024</Text>
 
-                <TouchableOpacity
-                  style={styles.modalImportButton}
-                  onPress={handleImportWallet}
-                >
-                  <Text style={styles.modalImportText}>Import</Text>
-                </TouchableOpacity>
-              </View>
+      {/* IMPORT MODAL */}
+      <Modal
+        visible={showImportModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowImportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Import Wallet</Text>
+            <Text style={styles.modalSubtitle}>
+              Enter your 12 or 24 word seed phrase
+            </Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="word1 word2 word3 ..."
+              placeholderTextColor="#888"
+              value={importMnemonic}
+              onChangeText={setImportMnemonic}
+              multiline
+              numberOfLines={4}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  setShowImportModal(false);
+                  setImportMnemonic('');
+                }}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalImportButton}
+                onPress={handleImportWallet}
+              >
+                <Text style={styles.modalImportText}>Import</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </Modal>
-      </SafeAreaView>
-    </LinearGradient>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
+const neon = '#D5FF00';
+
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-  },
-  content: {
-    flex: 1,
+    backgroundColor: '#000',
     justifyContent: 'space-between',
-    padding: 24,
+    paddingHorizontal: 25,
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginTop: 80,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+
+  /** ----------------------------
+   *   TOP LOGO LAYOUT (EXACT)
+   *  ---------------------------- */
+  topLogoContainer: {
+    flexDirection: 'row',
     justifyContent: 'center',
+    marginTop: 50,
+    gap: 14,
+  },
+
+  logoBlockRow: {
+    flexDirection: 'column',
+    gap: 14,
+  },
+
+  logoBlock: {
+    width: 70,
+    height: 70,
+    backgroundColor: neon,
+    borderRadius: 8,
+  },
+
+  logoBlockTall: {
+    width: 70,
+    height: 150,
+    backgroundColor: neon,
+    borderRadius: 8,
+  },
+
+  /** ----------------------------
+   *        TEXT BLOCK
+   *  ---------------------------- */
+  textWrapper: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginTop: 25,
   },
-  logoText: {
-    fontSize: 48,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+  welcomeText: {
     color: '#fff',
-    marginBottom: 8,
+    fontSize: 22,
   },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
+  appName: {
+    color: neon,
+    fontSize: 34,
+    fontWeight: '800',
+    marginTop: 4,
   },
-  buttonContainer: {
-    gap: 16,
+  subText: {
+    color: '#aaa',
+    fontSize: 15,
+    marginTop: 20,
   },
+
+  /** ----------------------------
+   *        BUTTONS
+   *  ---------------------------- */
+  buttonsWrapper: {
+    marginTop: 100,
+    marginBottom: -60
+  },
+
   primaryButton: {
-    backgroundColor: '#fff',
-    padding: 18,
-    borderRadius: 16,
+    backgroundColor: neon,
+    paddingVertical: 16,
+    borderRadius: 21,
     alignItems: 'center',
+    marginBottom: 14,
   },
   primaryButtonText: {
-    color: '#667eea',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    color: '#000',
   },
+
   secondaryButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    padding: 18,
-    borderRadius: 16,
-    alignItems: 'center',
+    paddingVertical: 16,
+    borderRadius: 21,
+    borderColor: '#333',
     borderWidth: 2,
-    borderColor: '#fff',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   secondaryButtonText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  warning: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+
+  /** ----------------------------
+   *         FOOTER
+   *  ---------------------------- */
+  // footer: {
+  //   textAlign: 'center',
+  //   marginBottom: 30,
+  //   color: '#444',
+  //   fontSize: 14,
+  //   letterSpacing: 2,
+  // },
+
+  bottomArea: {
+    marginBottom: 35,
   },
-  warningText: {
-    color: '#fff',
-    fontSize: 14,
-    textAlign: 'center',
+
+  createBtn: {
+    backgroundColor: neon,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    marginBottom: 15,
   },
+  createBtnText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  importBtn: {
+    backgroundColor: "#fff",
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  importBtnText: {
+    color: "#000",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+
+  footer: {
+    textAlign: "center",
+    color: "#555",
+    marginTop: 5,
+  },
+
+  /** ----------------------------
+   *         IMPORT MODAL
+   *  ---------------------------- */
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
-    padding: 24,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 20,
   },
-  modalContent: {
-    backgroundColor: '#fff',
+  modalContainer: {
+    backgroundColor: '#111',
     borderRadius: 20,
-    padding: 24,
+    padding: 22,
   },
   modalTitle: {
+    color: neon,
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
+    color: '#aaa',
+    marginBottom: 15,
   },
-  textArea: {
+  input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#333',
     borderRadius: 12,
-    padding: 16,
-    fontSize: 14,
+    padding: 15,
     minHeight: 120,
-    textAlignVertical: 'top',
+    color: '#fff',
     marginBottom: 20,
   },
-  modalButtons: {
+
+  modalButtonsRow: {
     flexDirection: 'row',
     gap: 12,
   },
   modalCancelButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#667eea',
+    borderColor: neon,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
   },
   modalCancelText: {
-    color: '#667eea',
-    fontWeight: 'bold',
+    color: neon,
+    fontWeight: '700',
   },
   modalImportButton: {
     flex: 1,
-    padding: 16,
+    paddingVertical: 14,
+    backgroundColor: neon,
     borderRadius: 12,
-    backgroundColor: '#667eea',
     alignItems: 'center',
   },
   modalImportText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#000',
+    fontWeight: '700',
   },
 });

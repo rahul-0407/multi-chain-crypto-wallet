@@ -260,3 +260,26 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
+
+
+
+
+
+
+
+
+{/* <View style={styles.bottomArea}>
+        <TouchableOpacity style={styles.createBtn} onPress={handleCreateWallet}>
+          <Text style={styles.createBtnText}>Create a new wallet</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.importBtn}
+          onPress={() => setShowImportModal(true)}
+        >
+          <Text style={styles.importBtnText}>Import an existing wallet</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.footer}>BIBIZ 2024</Text>
+      </View> */}
