@@ -67,6 +67,12 @@ export default function ReceiveScreen() {
           <Text style={styles.addressLabel}>Your {selectedChain.name} Address</Text>
           <Text style={styles.addressText}>{wallet?.address}</Text>
         </View>
+        {/* Private Key Section (UNSECURE - temporary) */}
+        <View style={styles.privateCard}>
+          <Text style={styles.privateLabel}>Your Private Key</Text>
+          <Text style={styles.privateText}>{wallet?.privateKey}</Text>
+        </View>
+
 
         {/* Action Buttons */}
         <View style={styles.actions}>
@@ -103,6 +109,30 @@ export default function ReceiveScreen() {
 }
 
 const styles = StyleSheet.create({
+  privateCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  privateLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#d11a2a",
+    marginBottom: 12,
+  },
+  privateText: {
+    fontSize: 14,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    color: "#333",
+    lineHeight: 20,
+  },
+
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',

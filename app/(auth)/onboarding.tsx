@@ -4,13 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Alert,
   TextInput,
   Modal,
   ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useWallet } from '../../hooks/useWallet';
 import WalletService from '../../services/WalletService';

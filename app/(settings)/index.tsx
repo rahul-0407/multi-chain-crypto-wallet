@@ -52,6 +52,27 @@ export default function SettingsScreen() {
     );
   };
 
+
+  // Add below your handleDeleteWallet()
+  const handleLogout = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out? You can log back in anytime using your Secret Recovery Phrase.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteWallet(); // clears from context + SecureStore
+            router.replace('/(auth)/onboarding');
+          },
+        },
+      ]
+    );
+  };
+
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -59,17 +80,17 @@ export default function SettingsScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Settings</Text>
           <TouchableOpacity
-  onPress={() => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace("/(tabs)");
-    }
-  }}
-  style={styles.closeButton}
->
-  <Ionicons name="close" size={28} color="#000" />
-</TouchableOpacity>
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)");
+              }
+            }}
+            style={styles.closeButton}
+          >
+            <Ionicons name="close" size={28} color="#000" />
+          </TouchableOpacity>
 
         </View>
 
@@ -185,9 +206,11 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         {/* Logout / Lock */}
-        <TouchableOpacity>
-          <Text style={styles.lockText}>Lock</Text>
+        {/* Logout Button */}
+        <TouchableOpacity onPress={handleLogout}>
+          <Text style={styles.lockText}>Log Out</Text>
         </TouchableOpacity>
+
 
         <View style={{ height: 50 }} />
       </ScrollView>
