@@ -6,8 +6,9 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useWallet } from "../../hooks/useWallet";
 
@@ -15,59 +16,69 @@ export default function BackupScreen() {
   const router = useRouter();
   const { mnemonic } = useLocalSearchParams<{ mnemonic: string }>();
   const { createWallet } = useWallet();
+
   const [revealed, setRevealed] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const words = mnemonic?.split(" ") || [];
 
   const handleContinue = async () => {
+    // 1️⃣ Must reveal first
+    if (!revealed) {
+      Alert.alert(
+        "Warning",
+        "Please reveal and write down your seed phrase first."
+      );
+      return;
+    }
 
-  // 1️⃣ User must reveal the seed words first
-  if (!revealed) {
-    Alert.alert(
-      "Warning",
-      "Please reveal and write down your seed phrase first."
-    );
-    return;
-  }
+    // 2️⃣ If not confirmed → show alert
+    if (!confirmed) {
+      Alert.alert(
+        "Confirm Backup",
+        "Have you safely written down your seed phrase?",
+        [
+          { text: "Not Yet", style: "cancel" },
+          {
+            text: "Yes, Continue",
+            onPress: () => {
+              setLoading(true); // show loading screen
 
-  // 2️⃣ If user has NOT checked confirmation box → show alert
-  if (!confirmed) {
-    Alert.alert(
-      "Confirm Backup",
-      "Have you safely written down your seed phrase?",
-      [
-        { text: "Not Yet", style: "cancel" },
-
-        {
-          text: "Yes, Continue",
-          onPress: () => {
-            // Navigate instantly (avoid freeze)
-            router.replace("/(tabs)");
-
-            // Do heavy wallet creation in background
-            setTimeout(async () => {
-              await createWallet(mnemonic!);
-            }, 10);
+              // heavy wallet creation in background
+              setTimeout(async () => {
+                await createWallet(mnemonic!);
+                setLoading(false);
+                router.replace("/");
+              }, 50);
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
 
-    return; // stop function here
-  }
+      return;
+    }
 
-  // 3️⃣ If confirmed = true → skip alert
-  router.replace("/(tabs)");
+    // 3️⃣ If confirmed before → skip alert
+    setLoading(true);
 
-  setTimeout(async () => {
-    await createWallet(mnemonic!);
-  }, 10);
-};
-
+    setTimeout(async () => {
+      await createWallet(mnemonic!);
+      setLoading(false);
+      router.replace("/");
+    }, 50);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* LOADING OVERLAY */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#D5FF00" />
+          <Text style={styles.loadingText}>Creating your wallet...</Text>
+        </View>
+      )}
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.content}
@@ -81,7 +92,7 @@ export default function BackupScreen() {
           </Text>
         </View>
 
-        {/* SEED PHRASE CONTAINER */}
+        {/* SEED PHRASE BOX */}
         <View style={styles.card}>
           {!revealed ? (
             <View style={styles.revealContainer}>
@@ -135,11 +146,7 @@ export default function BackupScreen() {
         )}
 
         {/* CONTINUE BUTTON */}
-        <TouchableOpacity
-          style={styles.continueBtn}
-          onPress={handleContinue}
-        >
-
+        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
           <Text style={styles.continueText}>Continue to Wallet</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -158,6 +165,26 @@ const styles = StyleSheet.create({
   content: {
     padding: 22,
     paddingBottom: 50,
+  },
+
+  /* LOADING OVERLAY */
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    zIndex: 999,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 16,
   },
 
   /* HEADER */
@@ -285,15 +312,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  /* CONTINUE BTN */
+  /* CONTINUE BUTTON */
   continueBtn: {
     backgroundColor: "#fff",
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
-  },
-  disabledBtn: {
-    opacity: 0.3,
   },
   continueText: {
     color: "#000",
