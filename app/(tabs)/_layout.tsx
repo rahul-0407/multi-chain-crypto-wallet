@@ -34,7 +34,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="swap"
           options={{
-            title: "Browser",
+            title: "Swap",
             tabBarIcon: ({ focused, color }) => (
               <Ionicons name="swap-horizontal" size={26} color={color} />
             ),
@@ -48,14 +48,8 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="rewards"
           options={{
-            title: "Rewards",
-            tabBarIcon: ({ focused, color }) => (
-              <Ionicons
-                name="time-outline"
-                size={24}
-                color={color}
-              />
-            ),
+            href: null, // this tells expo-router NOT to show it in the bottom tab
+            tabBarStyle:{display:"none"}
           }}
         />
         <Tabs.Screen
